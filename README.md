@@ -2,6 +2,27 @@
 
 一個以台灣官方公開資料為主的前端儀表板，用來快速判斷各縣市的紫外線曝曬與高溫熱傷害風險。設計語言延續 `livejiaquan/taiwan-reservoir-static` 的公共資料 dashboard 風格：大數字、卡片、語意風險色、排名、細節卡與明確資料狀態。
 
+## Project Structure
+
+```text
+src/
+  App.tsx
+  components/
+  data/
+  features/dashboard/
+  lib/
+docs/
+  ARCHITECTURE.md
+  DATA_SOURCES.md
+  DEPLOYMENT.md
+.github/workflows/
+  ci.yml
+```
+
+- Architecture: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+- Data source strategy: [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md)
+- Deployment notes: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
+
 ## Data Strategy
 
 主要資料來源為交通部中央氣象署開放資料平臺：
@@ -47,6 +68,7 @@ Local URL is printed by Vite, usually `http://localhost:5173`.
 ## Verification
 
 ```bash
+npm ci
 npm run lint
 npm run typecheck
 npm run build
