@@ -12,13 +12,15 @@ export function SegmentedControl<T extends string>({
   onChange,
 }: SegmentedControlProps<T>) {
   return (
-    <div>
-      <p className="mb-2 text-xs font-bold text-ink-500">{label}</p>
-      <div className="flex gap-1 overflow-x-auto rounded-xl border border-ink-100 bg-ink-100/70 p-1">
+    <div className="control-group" role="group" aria-label={label}>
+      <span className="control-label">{label}</span>
+      <div className="flex min-w-0 flex-1 flex-wrap gap-1">
         {options.map((option) => (
           <button
             key={option.key}
+            type="button"
             className={`segment-button ${value === option.key ? "is-active" : ""}`}
+            aria-pressed={value === option.key}
             onClick={() => onChange(option.key)}
           >
             {option.label}
