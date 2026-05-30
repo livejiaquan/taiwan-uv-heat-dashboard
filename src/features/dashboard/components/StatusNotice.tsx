@@ -2,7 +2,12 @@ import { AlertTriangle, ShieldCheck } from "lucide-react";
 import type { DashboardData } from "../../../lib/types";
 
 export function StatusNotice({ data }: { data: DashboardData }) {
-  if (!data.stats.errors.length && !data.stats.stale && data.stats.dataMode === "live") {
+  if (
+    !data.stats.errors.length &&
+    !data.stats.stale &&
+    !data.stats.missingDataCount &&
+    data.stats.dataMode === "live"
+  ) {
     return (
       <div className="rounded-2xl border border-reef-100 bg-white/80 p-4 text-sm font-semibold text-reef-700 shadow-card backdrop-blur">
         <div className="flex items-center gap-2">
@@ -22,7 +27,9 @@ export function StatusNotice({ data }: { data: DashboardData }) {
             {data.stats.dataMode === "demo" ? "目前顯示示範資料" : "資料狀態需要留意"}
           </p>
           <p>
-            {data.stats.stale
+            {data.stats.missingDataCount
+              ? `${data.stats.missingDataCount} 個縣市目前缺少足夠欄位，已標示為資料不足，不會被歸入低風險。`
+              : data.stats.stale
               ? "最新觀測時間已超過 45 分鐘，請以中央氣象署正式發布為準。"
               : "部分 CWA 來源可能未回應，介面已保留可用欄位並標示資料來源。"}
           </p>

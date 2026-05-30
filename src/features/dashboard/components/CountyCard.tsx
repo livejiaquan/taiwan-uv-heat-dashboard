@@ -67,6 +67,7 @@ export function CountyCard({ county, active, onSelect }: CountyCardProps) {
           <RadioTower className="h-3.5 w-3.5" aria-hidden="true" />
           {county.stationCount ? `${county.stationCount} 測站` : "測站暫缺"}
         </span>
+        <span className="info-chip">{dataQualityCopy[county.dataQuality]}</span>
         <span className="info-chip">
           <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
           {formatRelativeAge(county.observedAt)}
@@ -75,3 +76,9 @@ export function CountyCard({ county, active, onSelect }: CountyCardProps) {
     </button>
   );
 }
+
+const dataQualityCopy: Record<CountyRisk["dataQuality"], string> = {
+  complete: "資料完整",
+  partial: "部分資料",
+  missing: "資料不足",
+};

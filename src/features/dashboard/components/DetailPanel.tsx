@@ -6,6 +6,8 @@ import type { CountyRisk } from "../../../lib/types";
 import { toneStyles } from "../constants";
 
 export function DetailPanel({ county }: { county: CountyRisk }) {
+  const dataQuality = dataQualityCopy[county.dataQuality];
+
   return (
     <section className="rounded-2xl border border-white/75 bg-white/85 p-5 shadow-card backdrop-blur">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -49,6 +51,12 @@ export function DetailPanel({ county }: { county: CountyRisk }) {
         <DetailItem label="相對濕度" value={`${formatInteger(county.humidity)} %`} />
         <DetailItem label="36小時最高溫" value={`${formatNumber(county.forecastMaxTemperature)} °C`} />
         <DetailItem label="測站數" value={`${county.stationCount} 站`} />
+        <DetailItem label="資料品質" value={dataQuality.label} helper={dataQuality.body} />
+        <DetailItem
+          label="UV 來源"
+          value={uvSourceCopy[county.uvSource]}
+          helper={county.uvSource === "missing" ? "缺少 UV 欄位時不會被視為低風險。" : undefined}
+        />
       </div>
 
       <div className="mt-5 rounded-xl border border-ink-100 bg-white/70 p-4">
@@ -103,11 +111,42 @@ function MetricBlock({
   );
 }
 
-function DetailItem({ label, value }: { label: string; value: string }) {
+const dataQualityCopy: Record<CountyRisk["dataQuality"], { label: string; body: string }> = {
+  complete: {
+    label: "完整",
+    body: "UV 與高溫欄位皆可用",
+  },
+  partial: {
+    label: "部分",
+    body: "仍可判讀，但缺少部分 UV 或高溫欄位",
+  },
+  missing: {
+    label: "不足",
+    body: "目前沒有足夠欄位支撐風險判讀",
+  },
+};
+
+const uvSourceCopy: Record<CountyRisk["uvSource"], string> = {
+  current: "即時觀測",
+  dailyMax: "日最大備援",
+  demo: "示範資料",
+  missing: "缺少資料",
+};
+
+function DetailItem({
+  label,
+  value,
+  helper,
+}: {
+  label: string;
+  value: string;
+  helper?: string;
+}) {
   return (
     <div className="rounded-xl border border-ink-100 bg-white/70 p-3">
       <p className="text-xs font-bold text-ink-500">{label}</p>
       <p className="mt-1 text-lg font-black text-ink-900">{value}</p>
+      {helper ? <p className="mt-1 text-xs leading-5 text-ink-500">{helper}</p> : null}
     </div>
   );
 }

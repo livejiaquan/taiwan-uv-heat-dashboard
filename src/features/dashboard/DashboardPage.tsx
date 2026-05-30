@@ -10,6 +10,7 @@ import { RankingPanel } from "./components/RankingPanel";
 import { SegmentedControl } from "./components/SegmentedControl";
 import { StatsGrid } from "./components/StatsGrid";
 import { StatusNotice } from "./components/StatusNotice";
+import { TaiwanRiskMap } from "./components/TaiwanRiskMap";
 import { regionOptions, sortOptions } from "./constants";
 import type { RegionFilter, SortKey } from "./types";
 
@@ -46,13 +47,21 @@ export function DashboardPage({ data, refreshing, onRefresh }: DashboardPageProp
         <StatusNotice data={data} />
         <StatsGrid data={data} />
 
-        <div className="mt-6 grid gap-6 xl:grid-cols-[1.12fr_0.88fr]">
+        <div className="mt-6 grid gap-6 xl:grid-cols-[1.18fr_0.82fr]">
+          <TaiwanRiskMap
+            counties={data.counties}
+            onSelect={setSelectedCounty}
+            selectedCounty={selected?.county}
+          />
+          {selected ? <DetailPanel county={selected} /> : null}
+        </div>
+
+        <div className="mt-6">
           <RankingPanel
             counties={data.counties.slice(0, 8)}
             onSelect={setSelectedCounty}
             selectedCounty={selected?.county}
           />
-          {selected ? <DetailPanel county={selected} /> : null}
         </div>
 
         <section className="mt-8">
@@ -122,6 +131,10 @@ const sortCounties = (counties: CountyRisk[], sort: SortKey) =>
         Math.max(a.heatIndex ?? -1, a.forecastMaxTemperature ?? -1)
       );
     }
-    if (sort === "safe") return a.overallScore - b.overallScore;
+    if (sort === "safe") {
+      const safeScoreA = a.overallScore < 0 ? Number.POSITIVE_INFINITY : a.overallScore;
+      const safeScoreB = b.overallScore < 0 ? Number.POSITIVE_INFINITY : b.overallScore;
+      return safeScoreA - safeScoreB;
+    }
     return b.overallScore - a.overallScore;
   });

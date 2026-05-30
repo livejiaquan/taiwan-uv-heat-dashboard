@@ -34,7 +34,11 @@ export function StatsGrid({ data }: { data: DashboardData }) {
         label="高風險縣市"
         value={String(data.stats.dangerousCounties)}
         unit={`/ ${data.stats.totalCounties}`}
-        caption="達非常高或極端風險"
+        caption={
+          data.stats.missingDataCount
+            ? `非常高/極端；${data.stats.missingDataCount} 縣市資料不足`
+            : "達非常高或極端風險"
+        }
       />
       <StatCard
         icon={ShieldCheck}

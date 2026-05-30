@@ -3,6 +3,14 @@ import type { AdviceItem, CountyRisk, RiskLevel, RiskTone } from "./types";
 const riskOrder: RiskTone[] = ["low", "moderate", "high", "very-high", "extreme"];
 
 export const riskCopy: Record<RiskTone, Omit<RiskLevel, "score">> = {
+  unknown: {
+    tone: "unknown",
+    label: "資料不足",
+    shortLabel: "缺",
+    colorClass: "text-slate-600",
+    bgClass: "bg-slate-50",
+    borderClass: "border-slate-200",
+  },
   low: {
     tone: "low",
     label: "低風險",
@@ -47,11 +55,11 @@ export const riskCopy: Record<RiskTone, Omit<RiskLevel, "score">> = {
 
 const level = (tone: RiskTone): RiskLevel => ({
   ...riskCopy[tone],
-  score: riskOrder.indexOf(tone),
+  score: tone === "unknown" ? -1 : riskOrder.indexOf(tone),
 });
 
 export const uvRiskLevel = (uv?: number): RiskLevel => {
-  if (uv === undefined || Number.isNaN(uv)) return level("low");
+  if (uv === undefined || Number.isNaN(uv)) return level("unknown");
   if (uv <= 2) return level("low");
   if (uv <= 5) return level("moderate");
   if (uv <= 7) return level("high");
@@ -61,7 +69,7 @@ export const uvRiskLevel = (uv?: number): RiskLevel => {
 
 export const heatRiskLevel = (heatIndex?: number, forecastMax?: number): RiskLevel => {
   const heat = Math.max(heatIndex ?? -Infinity, forecastMax ?? -Infinity);
-  if (!Number.isFinite(heat)) return level("low");
+  if (!Number.isFinite(heat)) return level("unknown");
   if (heat < 30) return level("low");
   if (heat < 33) return level("moderate");
   if (heat < 35) return level("high");
@@ -69,8 +77,10 @@ export const heatRiskLevel = (heatIndex?: number, forecastMax?: number): RiskLev
   return level("extreme");
 };
 
-export const overallRiskLevel = (uv: RiskLevel, heat: RiskLevel): RiskLevel =>
-  level(riskOrder[Math.max(uv.score, heat.score)]);
+export const overallRiskLevel = (uv: RiskLevel, heat: RiskLevel): RiskLevel => {
+  if (uv.score < 0 && heat.score < 0) return level("unknown");
+  return level(riskOrder[Math.max(uv.score, heat.score)]);
+};
 
 export const heatIndexCelsius = (
   temperature?: number,
@@ -98,7 +108,13 @@ export const heatIndexCelsius = (
 export const buildAdvice = (county: CountyRisk): AdviceItem[] => {
   const advice: AdviceItem[] = [];
 
-  if (county.uvLevel.score >= 3) {
+  if (county.uvLevel.tone === "unknown") {
+    advice.push({
+      title: "UV 資料不足",
+      body: "目前缺少可用 UV 觀測或日最大值，請先查看中央氣象署正式資訊，不要把缺資料視為低風險。",
+      tone: "unknown",
+    });
+  } else if (county.uvLevel.score >= 3) {
     advice.push({
       title: "防曬升級",
       body: "上午 10 點到下午 2 點減少曝曬，補擦 SPF 30+ 防曬，帽子、太陽眼鏡與長袖一起使用。",
@@ -118,7 +134,13 @@ export const buildAdvice = (county: CountyRisk): AdviceItem[] => {
     });
   }
 
-  if (county.heatLevel.score >= 3) {
+  if (county.heatLevel.tone === "unknown") {
+    advice.push({
+      title: "高溫資料不足",
+      body: "目前缺少溫度、濕度或預報高溫欄位，戶外活動前應確認最近觀測與地方天氣資訊。",
+      tone: "unknown",
+    });
+  } else if (county.heatLevel.score >= 3) {
     advice.push({
       title: "熱傷害警戒",
       body: "高強度運動改到清晨或傍晚，每 15 到 20 分鐘補水，留意頭暈、噁心與心跳過快。",

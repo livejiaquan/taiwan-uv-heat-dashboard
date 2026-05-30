@@ -18,6 +18,7 @@ export const sortOptions: Array<{ key: SortKey; label: string }> = [
 ];
 
 export const toneStyles: Record<RiskTone, string> = {
+  unknown: "from-slate-300 to-slate-500",
   low: "from-emerald-500 to-reef-500",
   moderate: "from-sun-300 to-sun-500",
   high: "from-orange-400 to-orange-600",

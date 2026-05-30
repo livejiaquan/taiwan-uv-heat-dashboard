@@ -1,6 +1,7 @@
 export type RegionKey = "north" | "central" | "south" | "east" | "islands";
 
 export type RiskTone =
+  | "unknown"
   | "low"
   | "moderate"
   | "high"
@@ -62,6 +63,7 @@ export interface CountyRisk {
   heatIndex?: number;
   forecastMaxTemperature?: number;
   forecastWeather?: string;
+  dataQuality: "complete" | "partial" | "missing";
   uvLevel: RiskLevel;
   heatLevel: RiskLevel;
   overallLevel: RiskLevel;
@@ -78,6 +80,7 @@ export interface AdviceItem {
 export interface DashboardStats {
   totalCounties: number;
   dangerousCounties: number;
+  missingDataCount: number;
   stale: boolean;
   latestUpdate?: string;
   highestUv?: CountyRisk;

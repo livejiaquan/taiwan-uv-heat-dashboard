@@ -1,8 +1,8 @@
 export const formatNumber = (value?: number, digits = 1): string =>
-  value === undefined || Number.isNaN(value) ? "--" : value.toFixed(digits);
+  value === undefined || !Number.isFinite(value) ? "--" : value.toFixed(digits);
 
 export const formatInteger = (value?: number): string =>
-  value === undefined || Number.isNaN(value) ? "--" : String(Math.round(value));
+  value === undefined || !Number.isFinite(value) ? "--" : String(Math.round(value));
 
 export const formatTime = (iso?: string): string => {
   if (!iso) return "--";

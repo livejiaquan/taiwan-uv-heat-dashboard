@@ -319,6 +319,17 @@ export const buildDashboardData = (
     const uvLevel = uvRiskLevel(uvIndex);
     const heatLevel = heatRiskLevel(heatIndex, forecast?.maxTemperature);
     const overallLevel = overallRiskLevel(uvLevel, heatLevel);
+    const hasUvData = uvIndex !== undefined;
+    const hasHeatData =
+      heatIndex !== undefined ||
+      forecast?.maxTemperature !== undefined ||
+      hottest?.temperature !== undefined;
+    const dataQuality =
+      hasUvData && hasHeatData
+        ? "complete"
+        : hasUvData || hasHeatData
+          ? "partial"
+          : "missing";
     const risk: CountyRisk = {
       ...meta,
       observedAt: latestIso([
@@ -335,13 +346,16 @@ export const buildDashboardData = (
       heatIndex,
       forecastMaxTemperature: forecast?.maxTemperature,
       forecastWeather: forecast?.weather,
+      dataQuality,
       uvLevel,
       heatLevel,
       overallLevel,
       overallScore:
-        overallLevel.score * 100 +
-        (uvIndex ?? 0) * 4 +
-        Math.max(heatIndex ?? 0, forecast?.maxTemperature ?? 0),
+        overallLevel.score < 0
+          ? -1
+          : overallLevel.score * 100 +
+            (uvIndex ?? 0) * 4 +
+            Math.max(heatIndex ?? 0, forecast?.maxTemperature ?? 0),
       advice: [],
     };
     return { ...risk, advice: buildAdvice(risk) };
@@ -360,6 +374,7 @@ export const buildDashboardData = (
       item.observedTemperature ?? -Infinity,
     ),
   );
+  const knownRiskCounties = countyRisks.filter((item) => item.overallScore >= 0);
 
   return {
     counties: sorted,
@@ -367,11 +382,13 @@ export const buildDashboardData = (
       totalCounties: countyRisks.length,
       dangerousCounties: countyRisks.filter((item) => item.overallLevel.score >= 3)
         .length,
+      missingDataCount: countyRisks.filter((item) => item.dataQuality === "missing")
+        .length,
       stale: mode === "live" ? latestAgeMinutes > 45 : false,
       latestUpdate,
       highestUv,
       highestHeat,
-      safest: [...countyRisks].sort((a, b) => a.overallScore - b.overallScore)[0],
+      safest: [...knownRiskCounties].sort((a, b) => a.overallScore - b.overallScore)[0],
       dataMode: mode,
       sourceSummary:
         mode === "live"
