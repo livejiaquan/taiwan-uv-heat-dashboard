@@ -13,11 +13,21 @@ npm run build
 
 ## GitHub Pages
 
-The current repository includes CI validation only. To publish with GitHub Pages, use one of these approaches:
+The repository deploys to GitHub Pages with `.github/workflows/deploy.yml`.
+The Vite base path is set to `/taiwan-uv-heat-dashboard/` for the project site URL:
 
-1. Build locally or in CI with `npm run build`.
-2. Deploy the `dist/` directory to GitHub Pages.
-3. Leave `VITE_CWA_API_KEY` unset if demo mode is acceptable for public portfolio browsing.
+```text
+https://livejiaquan.github.io/taiwan-uv-heat-dashboard/
+```
+
+The workflow:
+
+1. Installs dependencies with `npm ci`.
+2. Builds the static site with `npm run build`.
+3. Uploads `dist/` as the GitHub Pages artifact.
+4. Deploys the artifact to the `github-pages` environment.
+
+Leave `VITE_CWA_API_KEY` unset if demo mode is acceptable for public portfolio browsing.
 
 If live data is required on GitHub Pages, configure the build with `VITE_CWA_API_KEY`. Remember that the key is visible to browsers in a static frontend.
 
