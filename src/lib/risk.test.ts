@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { buildDashboardData } from "./cwa";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { buildDashboardData, loadCwaBundle } from "./cwa";
 import { heatRiskLevel, overallRiskLevel, uvRiskLevel } from "./risk";
 
 describe("risk levels", () => {
@@ -17,6 +17,87 @@ describe("risk levels", () => {
 
     expect(overallRiskLevel(missing, missing).tone).toBe("unknown");
     expect(overallRiskLevel(missing, highHeat).tone).toBe("very-high");
+  });
+});
+
+describe("CWA bundle loading", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it("falls back to demo mode when successful responses have counties but no risk values", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async (url: string) => ({
+        ok: true,
+        json: async () => {
+          if (url.includes("O-A0003-001")) {
+            return {
+              success: "true",
+              records: { Station: [{ GeoInfo: { CountyName: "臺北市" } }] },
+            };
+          }
+          if (url.includes("O-A0005-001")) {
+            return {
+              success: "true",
+              records: { weatherElement: { location: [{ CountyName: "臺北市" }] } },
+            };
+          }
+          return {
+            success: "true",
+            records: { location: [{ locationName: "臺北市" }] },
+          };
+        },
+      })),
+    );
+
+    const result = await loadCwaBundle("test-key");
+
+    expect(result.mode).toBe("demo");
+    expect(result.bundle).toBeUndefined();
+    expect(result.errors).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("沒有可用資料"),
+        "CWA 即時資料無法使用，已切換為示範資料。",
+      ]),
+    );
+  });
+
+  it("keeps live mode when at least one response contains usable records", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async (url: string) => ({
+        ok: true,
+        json: async () =>
+          url.includes("F-C0032-001")
+            ? {
+                success: "true",
+                records: {
+                  location: [
+                    {
+                      locationName: "臺北市",
+                      weatherElement: [
+                        {
+                          elementName: "MaxT",
+                          time: [{ parameter: { parameterName: "35" } }],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              }
+            : { success: "true", records: {} },
+      })),
+    );
+
+    const result = await loadCwaBundle("test-key");
+
+    expect(result.mode).toBe("live");
+    expect(result.bundle?.forecast).toBeDefined();
+    expect(result.bundle?.observations).toBeUndefined();
+    expect(result.bundle?.dailyUv).toBeUndefined();
+    expect(result.errors).toHaveLength(2);
   });
 });
 

@@ -109,14 +109,39 @@ export const loadCwaBundle = async (apiKey?: string): Promise<{
   const errors: string[] = [];
   const bundle: RawCwaBundle = {};
 
-  if (observations.status === "fulfilled") bundle.observations = observations.value;
-  else errors.push(`10分鐘觀測資料讀取失敗：${observations.reason}`);
+  if (observations.status === "fulfilled") {
+    const parsed = parseObservationPayload(observations.value);
+    const hasRiskValue = parsed.some(
+      (item) => item.temperature !== undefined || item.uvIndex !== undefined,
+    );
+    if (hasRiskValue) {
+      bundle.observations = observations.value;
+    } else {
+      errors.push("10分鐘觀測資料沒有可用資料。");
+    }
+  } else errors.push(`10分鐘觀測資料讀取失敗：${observations.reason}`);
 
-  if (dailyUv.status === "fulfilled") bundle.dailyUv = dailyUv.value;
-  else errors.push(`每日最大 UV 資料讀取失敗：${dailyUv.reason}`);
+  if (dailyUv.status === "fulfilled") {
+    const hasRiskValue = parseDailyUvPayload(dailyUv.value).some(
+      (item) => item.uvIndex !== undefined,
+    );
+    if (hasRiskValue) {
+      bundle.dailyUv = dailyUv.value;
+    } else {
+      errors.push("每日最大 UV 資料沒有可用資料。");
+    }
+  } else errors.push(`每日最大 UV 資料讀取失敗：${dailyUv.reason}`);
 
-  if (forecast.status === "fulfilled") bundle.forecast = forecast.value;
-  else errors.push(`36小時預報資料讀取失敗：${forecast.reason}`);
+  if (forecast.status === "fulfilled") {
+    const hasRiskValue = parseForecastPayload(forecast.value).some(
+      (item) => item.maxTemperature !== undefined,
+    );
+    if (hasRiskValue) {
+      bundle.forecast = forecast.value;
+    } else {
+      errors.push("36小時預報資料沒有可用資料。");
+    }
+  } else errors.push(`36小時預報資料讀取失敗：${forecast.reason}`);
 
   if (!bundle.observations && !bundle.dailyUv && !bundle.forecast) {
     return {
