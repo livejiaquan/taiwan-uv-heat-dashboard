@@ -67,26 +67,11 @@ export const uvRiskLevel = (uv?: number): RiskLevel => {
   return level("extreme");
 };
 
-export const heatRiskLevel = (heatIndex?: number, forecastMax?: number): RiskLevel => {
-  const heat = Math.max(heatIndex ?? -Infinity, forecastMax ?? -Infinity);
-  if (!Number.isFinite(heat)) return level("unknown");
-  if (heat < 30) return level("low");
-  if (heat < 33) return level("moderate");
-  if (heat < 35) return level("high");
-  if (heat < 37.5) return level("very-high");
-  return level("extreme");
-};
-
-export const overallRiskLevel = (uv: RiskLevel, heat: RiskLevel): RiskLevel => {
-  if (uv.score < 0 && heat.score < 0) return level("unknown");
-  return level(riskOrder[Math.max(uv.score, heat.score)]);
-};
-
 export const heatIndexCelsius = (
   temperature?: number,
   humidity?: number,
 ): number | undefined => {
-  if (temperature === undefined || humidity === undefined) return temperature;
+  if (temperature === undefined || humidity === undefined) return undefined;
   if (temperature < 27 || humidity < 40) return temperature;
 
   const tempF = (temperature * 9) / 5 + 32;
@@ -110,8 +95,10 @@ export const buildAdvice = (county: CountyRisk): AdviceItem[] => {
 
   if (county.uvLevel.tone === "unknown") {
     advice.push({
-      title: "UV 資料不足",
-      body: "目前缺少可用 UV 觀測或日最大值，請先查看中央氣象署正式資訊，不要把缺資料視為低風險。",
+      title: county.uvStale ? "UV 觀測已過期" : "UV 資料不足",
+      body: county.uvStale
+        ? "最近 UV 測站觀測已超過 45 分鐘，不再用來判斷目前風險；請查看中央氣象署正式資訊。"
+        : "目前缺少具有效時間的 UV 測站觀測；缺資料不代表低風險，請查看中央氣象署正式資訊。",
       tone: "unknown",
     });
   } else if (county.uvLevel.score >= 3) {
@@ -128,34 +115,8 @@ export const buildAdvice = (county: CountyRisk): AdviceItem[] => {
     });
   } else {
     advice.push({
-      title: "戶外條件較穩定",
-      body: "短時間活動風險較低，但山區、海邊或水面反射仍可能提高曝曬量。",
-      tone: "low",
-    });
-  }
-
-  if (county.heatLevel.tone === "unknown") {
-    advice.push({
-      title: "高溫資料不足",
-      body: "目前缺少溫度、濕度或預報高溫欄位，戶外活動前應確認最近觀測與地方天氣資訊。",
-      tone: "unknown",
-    });
-  } else if (county.heatLevel.score >= 3) {
-    advice.push({
-      title: "熱傷害警戒",
-      body: "高強度運動改到清晨或傍晚，每 15 到 20 分鐘補水，留意頭暈、噁心與心跳過快。",
-      tone: county.heatLevel.tone,
-    });
-  } else if (county.heatLevel.score >= 1) {
-    advice.push({
-      title: "補水與降溫",
-      body: "出門前先補水，活動中保留休息節奏，悶熱環境下避免一次拉高運動強度。",
-      tone: county.heatLevel.tone,
-    });
-  } else {
-    advice.push({
-      title: "適合輕量活動",
-      body: "仍要確認個人身體狀況，長時間活動建議攜帶水與防曬用品。",
+      title: "目前測站 UV 較低",
+      body: "這只表示此測站的 UV 曝曬較低，不代表高溫、官方警特報或其他戶外風險較低；山區、海邊與水面反射仍可能提高曝曬量。",
       tone: "low",
     });
   }

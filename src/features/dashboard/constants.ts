@@ -11,10 +11,10 @@ export const regionOptions: Array<{ key: RegionFilter; label: string }> = [
 ];
 
 export const sortOptions: Array<{ key: SortKey; label: string }> = [
-  { key: "danger", label: "危險優先" },
+  { key: "danger", label: "UV 風險優先" },
   { key: "uv", label: "UV 最高" },
-  { key: "heat", label: "熱風險最高" },
-  { key: "safe", label: "較安全" },
+  { key: "heat", label: "觀測熱感最高" },
+  { key: "safe", label: "UV 較低" },
 ];
 
 export const toneStyles: Record<RiskTone, string> = {

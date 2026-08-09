@@ -1,6 +1,6 @@
 # Architecture
 
-This project is a client-side public-data dashboard. The runtime shape is intentionally small: CWA payloads are loaded in the browser, normalized into county-level risk records, and rendered through feature-scoped React components.
+This project currently has a client-side validation architecture: CWA payloads are loaded in the browser, normalized into county-level records, and rendered through feature-scoped React components. This is an interim shape, not the approved production data architecture.
 
 ## Directory Layout
 
@@ -8,7 +8,7 @@ This project is a client-side public-data dashboard. The runtime shape is intent
 src/
   App.tsx                         App shell: loading, fatal error, dashboard route
   components/                     Shared presentational primitives
-  data/                           Static county metadata and demo fallback records
+  data/                           Static county metadata; legacy example records are not imported at runtime
   features/
     dashboard/
       DashboardPage.tsx           Dashboard composition and view state
@@ -26,7 +26,7 @@ src/
 ## Data Flow
 
 ```text
-CWA Open Data / demo fallback
+CWA Open Data (development credential only)
   -> src/lib/cwa.ts
   -> typed StationObservation / CountyForecast
   -> county-level CountyRisk records
@@ -34,7 +34,7 @@ CWA Open Data / demo fallback
   -> DashboardPage sections
 ```
 
-The app treats raw API responses as untrusted `unknown` values until they are parsed. Missing or malformed fields degrade into partial county records rather than crashing the UI.
+The app treats raw API responses as untrusted `unknown` values until they are parsed. Observation records require a valid, non-future timestamp and domain-valid values. Missing or malformed fields remain unknown. If current observations cannot be validated, the app fails closed instead of substituting forecast, daily-maximum, cached sample, or demo values.
 
 ## UI Boundaries
 
@@ -47,13 +47,17 @@ The app treats raw API responses as untrusted `unknown` values until they are pa
 ## State Model
 
 - `loading`: initial fetch is in progress.
-- `ready`: live or demo dashboard data is available.
-- `error`: no usable data could be built.
+- `ready`: validated CWA station observations are available; forecast may be partial.
+- `error`: no validated current observation is available or no credential is configured; only official-source links and retry are shown.
 - `degraded`: represented inside `DashboardData.stats.errors`.
-- `stale`: live data latest update is older than the threshold in `src/lib/cwa.ts`.
+- `stale`: evaluated per county and displayed metric; a fresh record elsewhere cannot mask it. The client recalculates freshness once per minute from its validated in-memory payload, without fabricating a newer timestamp or silently fetching a replacement.
 
 ## Risk Model
 
-The dashboard computes UV risk and heat risk separately, then uses the higher level as the overall county risk. The model is intentionally explainable and local to `src/lib/risk.ts`.
+UV uses the established UV index categories. Current ranking and map colors use only valid, unexpired UV station observations. Temperature, a same-station temperature/humidity heat-index estimate, and 36-hour forecast maximum remain separate; the local estimate is not presented as an official warning or WBGT category.
 
 Risk colors map to semantic levels rather than arbitrary chart colors, so rankings, pills, bars, and detail panels stay consistent.
+
+## Target Production Architecture
+
+The approved next step is a scheduled server-side aggregator with a private CWA credential, source-specific caching, captured schema fixtures, normalized provenance and freshness, health monitoring, and explicit stale/expired output. See `PRODUCT_MISSION_AND_ROADMAP.md` for launch gates.

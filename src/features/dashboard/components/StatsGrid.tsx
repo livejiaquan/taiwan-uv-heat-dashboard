@@ -1,51 +1,52 @@
-import { AlertTriangle, ShieldCheck, Sun, ThermometerSun } from "lucide-react";
+import { AlertTriangle, ArrowDownRight, Sun, ThermometerSun } from "lucide-react";
 import { StatCard } from "../../../components/StatCard";
 import { formatInteger, formatNumber } from "../../../lib/format";
 import type { DashboardData } from "../../../lib/types";
 
 export function StatsGrid({ data }: { data: DashboardData }) {
-  const highestHeat = data.stats.highestHeat
-    ? Math.max(
-        data.stats.highestHeat.heatIndex ?? -Infinity,
-        data.stats.highestHeat.forecastMaxTemperature ?? -Infinity,
-      )
-    : undefined;
-
   return (
     <section className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <StatCard
         icon={Sun}
         tone="sun"
-        label="最高 UV"
+        label="最高有效 UV 觀測"
         value={formatInteger(data.stats.highestUv?.uvIndex)}
         caption={data.stats.highestUv ? `${data.stats.highestUv.county} 曝曬最強` : "暫無 UV 資料"}
       />
       <StatCard
         icon={ThermometerSun}
         tone="heat"
-        label="最高熱指數"
-        value={formatNumber(highestHeat)}
+        label="最高有效氣溫觀測"
+        value={formatNumber(data.stats.highestTemperature?.observedTemperature)}
         unit="°C"
-        caption={data.stats.highestHeat ? `${data.stats.highestHeat.county} 體感最熱` : "暫無熱風險資料"}
+        caption={
+          data.stats.highestTemperature
+            ? `${data.stats.highestTemperature.county}；非官方高溫燈號`
+            : "暫無未過期氣溫觀測"
+        }
       />
       <StatCard
         icon={AlertTriangle}
         tone="ink"
-        label="高風險縣市"
-        value={String(data.stats.dangerousCounties)}
+        label="非常高／極端 UV"
+        value={String(data.stats.highUvCounties)}
         unit={`/ ${data.stats.totalCounties}`}
         caption={
           data.stats.missingDataCount
-            ? `非常高/極端；${data.stats.missingDataCount} 縣市資料不足`
-            : "達非常高或極端風險"
+            ? `${data.stats.missingDataCount} 縣市目前資料不足`
+            : "只計未過期的 UV 測站觀測"
         }
       />
       <StatCard
-        icon={ShieldCheck}
+        icon={ArrowDownRight}
         tone="reef"
-        label="相對安全"
-        value={data.stats.safest?.county ?? "--"}
-        caption={data.stats.safest ? `${data.stats.safest.overallLevel.label}` : "需要更多資料"}
+        label="目前 UV 觀測較低"
+        value={data.stats.lowestUv?.county ?? "--"}
+        caption={
+          data.stats.lowestUv
+            ? `${data.stats.lowestUv.uvLevel.label}；不代表適合戶外活動`
+            : "需要更多有效 UV 觀測"
+        }
       />
     </section>
   );

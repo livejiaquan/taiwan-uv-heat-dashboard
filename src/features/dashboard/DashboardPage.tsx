@@ -5,6 +5,7 @@ import { AdviceSection } from "./components/AdviceSection";
 import { CountyCard } from "./components/CountyCard";
 import { DetailPanel } from "./components/DetailPanel";
 import { Footer } from "./components/Footer";
+import { HealthSafetyNotice } from "./components/HealthSafetyNotice";
 import { Hero } from "./components/Hero";
 import { RankingPanel } from "./components/RankingPanel";
 import { SegmentedControl } from "./components/SegmentedControl";
@@ -45,6 +46,7 @@ export function DashboardPage({ data, refreshing, onRefresh }: DashboardPageProp
 
       <section className="mx-auto -mt-6 max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
         <StatusNotice data={data} />
+        <HealthSafetyNotice />
         <StatsGrid data={data} />
 
         <div className="mt-6 grid gap-6 xl:grid-cols-[1.18fr_0.82fr]">
@@ -69,10 +71,10 @@ export function DashboardPage({ data, refreshing, onRefresh }: DashboardPageProp
             <div>
               <p className="text-sm font-bold text-sun-600">Risk Explorer</p>
               <h2 className="mt-1 text-2xl font-black tracking-tight text-ink-900">
-                縣市 UV / 高溫風險
+                縣市觀測與預報
               </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-500">
-                用區域和排序快速縮小範圍，卡片保留最需要掃描的風險、UV、熱感與資料更新狀態。
+                UV 分級只使用具有效時間的測站觀測；氣溫觀測與 36 小時預報分開呈現。
               </p>
             </div>
             <div className="control-toolbar lg:min-w-[620px]">
@@ -124,17 +126,27 @@ const filterCounties = (counties: CountyRisk[], region: RegionFilter) =>
 
 const sortCounties = (counties: CountyRisk[], sort: SortKey) =>
   [...counties].sort((a, b) => {
-    if (sort === "uv") return (b.uvIndex ?? -1) - (a.uvIndex ?? -1);
+    if (sort === "uv") return freshUvValue(b) - freshUvValue(a);
     if (sort === "heat") {
-      return (
-        Math.max(b.heatIndex ?? -1, b.forecastMaxTemperature ?? -1) -
-        Math.max(a.heatIndex ?? -1, a.forecastMaxTemperature ?? -1)
-      );
+      return freshHeatValue(b) - freshHeatValue(a);
     }
     if (sort === "safe") {
-      const safeScoreA = a.overallScore < 0 ? Number.POSITIVE_INFINITY : a.overallScore;
-      const safeScoreB = b.overallScore < 0 ? Number.POSITIVE_INFINITY : b.overallScore;
+      const safeScoreA = a.priorityScore < 0 ? Number.POSITIVE_INFINITY : a.priorityScore;
+      const safeScoreB = b.priorityScore < 0 ? Number.POSITIVE_INFINITY : b.priorityScore;
       return safeScoreA - safeScoreB;
     }
-    return b.overallScore - a.overallScore;
+    return b.priorityScore - a.priorityScore;
   });
+
+const freshUvValue = (county: CountyRisk) =>
+  county.uvStale ? -1 : county.uvIndex ?? -1;
+
+const freshHeatValue = (county: CountyRisk) => {
+  if (county.heatIndex !== undefined && county.heatIndexStale === false) {
+    return county.heatIndex;
+  }
+  if (county.observedTemperature !== undefined && county.temperatureStale === false) {
+    return county.observedTemperature;
+  }
+  return -1;
+};

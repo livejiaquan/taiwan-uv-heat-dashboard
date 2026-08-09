@@ -8,8 +8,6 @@ export type RiskTone =
   | "very-high"
   | "extreme";
 
-export type DataMode = "live" | "demo";
-
 export interface RiskLevel {
   tone: RiskTone;
   label: string;
@@ -57,17 +55,27 @@ export interface CountyRisk {
   observedAt?: string;
   stationCount: number;
   uvIndex?: number;
-  uvSource: "current" | "dailyMax" | "demo" | "missing";
+  uvObservedAt?: string;
+  uvStationName?: string;
+  uvStale?: boolean;
   observedTemperature?: number;
   humidity?: number;
   heatIndex?: number;
+  heatIndexObservedAt?: string;
+  heatIndexStationName?: string;
+  heatIndexStale?: boolean;
+  temperatureObservedAt?: string;
+  temperatureStationName?: string;
+  temperatureStale?: boolean;
   forecastMaxTemperature?: number;
   forecastWeather?: string;
+  forecastStartTime?: string;
+  forecastEndTime?: string;
   dataQuality: "complete" | "partial" | "missing";
   uvLevel: RiskLevel;
-  heatLevel: RiskLevel;
-  overallLevel: RiskLevel;
-  overallScore: number;
+  priorityLevel: RiskLevel;
+  priorityScore: number;
+  stale: boolean;
   advice: AdviceItem[];
 }
 
@@ -79,14 +87,13 @@ export interface AdviceItem {
 
 export interface DashboardStats {
   totalCounties: number;
-  dangerousCounties: number;
+  highUvCounties: number;
   missingDataCount: number;
   stale: boolean;
   latestUpdate?: string;
   highestUv?: CountyRisk;
-  highestHeat?: CountyRisk;
-  safest?: CountyRisk;
-  dataMode: DataMode;
+  highestTemperature?: CountyRisk;
+  lowestUv?: CountyRisk;
   sourceSummary: string;
   errors: string[];
 }
@@ -98,6 +105,5 @@ export interface DashboardData {
 
 export interface RawCwaBundle {
   observations?: unknown;
-  dailyUv?: unknown;
   forecast?: unknown;
 }

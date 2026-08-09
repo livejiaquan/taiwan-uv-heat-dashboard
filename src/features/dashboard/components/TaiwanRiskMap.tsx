@@ -2,7 +2,7 @@ import L from "leaflet";
 import { useEffect, useMemo, useRef } from "react";
 import { MapPin } from "lucide-react";
 import { RiskPill } from "../../../components/RiskPill";
-import { formatInteger, formatNumber } from "../../../lib/format";
+import { formatInteger } from "../../../lib/format";
 import type { CountyRisk, RiskTone } from "../../../lib/types";
 
 interface TaiwanRiskMapProps {
@@ -73,9 +73,12 @@ export function TaiwanRiskMap({ counties, selectedCounty, onSelect }: TaiwanRisk
     markerRefs.current.clear();
 
     for (const county of counties) {
-      const colors = markerColors[county.overallLevel.tone];
+      const colors = markerColors[county.priorityLevel.tone];
       const marker = L.circleMarker([county.lat, county.lon], {
-        radius: county.overallLevel.tone === "unknown" ? 8 : 9 + Math.max(0, county.overallLevel.score) * 2,
+        radius:
+          county.priorityLevel.tone === "unknown"
+            ? 8
+            : 9 + Math.max(0, county.priorityLevel.score) * 2,
         color: colors.stroke,
         fillColor: colors.fill,
         fillOpacity: county.county === selectedCounty ? 0.95 : 0.78,
@@ -84,13 +87,7 @@ export function TaiwanRiskMap({ counties, selectedCounty, onSelect }: TaiwanRisk
       });
 
       marker.bindTooltip(
-        `${county.county}<br>UV ${formatInteger(county.uvIndex)} · ${formatNumber(
-          Math.max(
-            county.heatIndex ?? -Infinity,
-            county.forecastMaxTemperature ?? -Infinity,
-            county.observedTemperature ?? -Infinity,
-          ),
-        )}°C<br>${county.overallLevel.label}`,
+        `${county.county}<br>UV ${formatInteger(county.uvIndex)}<br>UV ${county.priorityLevel.label}`,
         { direction: "top", offset: [0, -8], opacity: 0.95 },
       );
       marker.on("click", () => onSelect(county.county));
@@ -112,16 +109,16 @@ export function TaiwanRiskMap({ counties, selectedCounty, onSelect }: TaiwanRisk
             <MapPin className="h-4 w-4" aria-hidden="true" />
             Taiwan Risk Map
           </p>
-          <h2 className="mt-1 text-2xl font-black text-ink-900">台灣縣市風險地圖</h2>
+          <h2 className="mt-1 text-2xl font-black text-ink-900">台灣縣市 UV 觀測地圖</h2>
           <p className="mt-2 max-w-xl text-sm leading-6 text-ink-500">
-            以實際台灣底圖呈現各縣市風險位置，點選標記可同步右側縣市細節。
+            顏色只代表未過期測站 UV 分級；灰色表示缺少有效觀測，點選可查看測站與時間。
           </p>
         </div>
-        {selected ? <RiskPill level={selected.overallLevel} label={selected.county} /> : null}
+        {selected ? <RiskPill level={selected.priorityLevel} label={selected.county} /> : null}
       </div>
 
       <div className="mt-4 overflow-hidden rounded-2xl border border-ink-100 bg-ink-100/60">
-        <div ref={containerRef} className="risk-map" aria-label="台灣縣市 UV 與高溫風險地圖" />
+        <div ref={containerRef} className="risk-map" aria-label="台灣縣市 UV 測站觀測地圖" />
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-ink-500">
