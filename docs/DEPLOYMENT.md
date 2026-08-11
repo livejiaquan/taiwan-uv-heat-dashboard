@@ -10,6 +10,7 @@ npm test
 npm run lint
 npm run typecheck
 npm run build
+npm run build:public
 ```
 
 ## GitHub Pages
@@ -24,11 +25,18 @@ https://livejiaquan.github.io/taiwan-uv-heat-dashboard/
 The workflow:
 
 1. Installs dependencies with `npm ci`.
-2. Builds the static site with `npm run build`.
-3. Uploads `dist/` as the GitHub Pages artifact.
-4. Deploys the artifact to the `github-pages` environment.
+2. Runs tests, lint, and typecheck.
+3. Runs `npm run build:public`, which forces the project-site base path, builds
+   with an explicitly empty `VITE_CWA_API_KEY`, and scans the resulting artifact
+   for credential-shaped tokens/placeholders and legacy demo markers.
+4. Uploads the guarded `dist/` as the GitHub Pages artifact.
+5. Deploys the artifact to the `github-pages` environment.
 
-The Pages workflow intentionally leaves `VITE_CWA_API_KEY` unset. The deployed site therefore shows an honest unavailable state and official deep links; it never creates sample observations.
+The Pages workflow explicitly sets `VITE_CWA_API_KEY` to an empty value. The
+public-build guard therefore prevents a client credential from being bundled and
+scans the actual artifact for known legacy demo/sample markers. The deployed site
+shows an honest unavailable state and official deep links; it never creates sample
+observations.
 
 Do not configure a production CWA credential in a static Pages build. Any `VITE_` value is visible to browsers and cannot protect quota.
 

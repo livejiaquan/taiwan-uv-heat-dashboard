@@ -73,6 +73,7 @@ npm test
 npm run lint
 npm run typecheck
 npm run build
+npm run build:public
 ```
 
 ## Deployment
@@ -80,6 +81,13 @@ npm run build
 ### GitHub Pages
 
 This project can be deployed as a static Vite build, but a no-key build intentionally shows an unavailable state. It is safe from fabricated recency, not a complete production data service.
+
+The Pages/CI artifact command is `npm run build:public`. It refuses a non-empty
+`VITE_CWA_API_KEY`, forces the project-site base path, builds with the variable
+explicitly empty, and scans the real `dist/` output for credential-shaped tokens,
+placeholders, and legacy demo markers before the artifact can be uploaded. The
+ordinary `npm run build` remains available for local authenticated contract
+validation and does not make a client-side key production-safe.
 
 ```bash
 npm run build

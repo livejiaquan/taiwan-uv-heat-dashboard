@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "typecheck": "tsc -b",
-    "preview": "vite preview --host 0.0.0.0"
+    "preview": "vite preview --host 0.0.0.0",
+    "build:public": "node scripts/build-public.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.1.1",

@@ -41,8 +41,10 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Build
-        run: npm run build
+      - name: Build public artifact and enforce no-key guard
+        env:
+          VITE_CWA_API_KEY: ""
+        run: npm run build:public
 
       - name: Configure Pages
         uses: actions/configure-pages@v6
