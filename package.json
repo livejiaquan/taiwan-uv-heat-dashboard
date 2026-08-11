@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "test": "vitest run",
+    "test:public-build-config": "node --test scripts/public-build-config.node-test.mjs",
     "typecheck": "tsc -b",
     "preview": "vite preview --host 0.0.0.0",
     "build:public": "node scripts/build-public.mjs"

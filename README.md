@@ -83,26 +83,28 @@ npm run build:public
 This project can be deployed as a static Vite build, but a no-key build intentionally shows an unavailable state. It is safe from fabricated recency, not a complete production data service.
 
 The Pages/CI artifact command is `npm run build:public`. It refuses a non-empty
-`VITE_CWA_API_KEY`, forces the project-site base path, builds with the variable
-explicitly empty, and scans the real `dist/` output for credential-shaped tokens,
-placeholders, and legacy demo markers before the artifact can be uploaded. The
-ordinary `npm run build` remains available for local authenticated contract
-validation and does not make a client-side key production-safe.
+`VITE_CWA_API_KEY`, uses a checked `PUBLIC_BASE_PATH` (default:
+`/taiwan-uv-heat-dashboard/`), builds with the key explicitly empty, and scans the
+real `dist/` output for credential-shaped tokens, placeholders, and legacy demo
+markers before the artifact can be uploaded. The ordinary `npm run build` remains
+available for local authenticated contract validation and does not make a
+client-side key production-safe.
 
-```bash
-npm run build
-```
+### Vercel / Netlify guarded root-host candidate
 
-Deploy the `dist/` directory.
+To build the same honest unavailable state for a prospective root custom domain,
+do **not** set `VITE_CWA_API_KEY`. Configure:
 
-### Vercel / Netlify (development validation only)
-
-Set `VITE_CWA_API_KEY` in project environment variables, then use:
-
-- Build command: `npm run build`
+- Install command: `npm ci`
+- Build command: `PUBLIC_BASE_PATH=/ npm run build:public`
 - Output directory: `dist`
 
-Because this is a client-only static app, a `VITE_` key is visible in the browser bundle. Do not treat that route as production-ready. The next production milestone is a cached server-side aggregator that keeps the credential private, validates schemas, and exposes source health.
+Because this is a client-only static app, a `VITE_` key is visible in the browser
+bundle. Do not treat that route as production-ready. The next production milestone
+is a cached server-side aggregator that keeps the credential private, validates
+schemas, and exposes source health. This command only verifies root-relative asset
+paths; the canonical/OG origin, DNS/HTTPS, and deployed browser smoke still require
+an approved domain decision.
 
 ## Source Notes
 

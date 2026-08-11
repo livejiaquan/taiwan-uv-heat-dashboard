@@ -41,8 +41,12 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Test public build configuration
+        run: npm run test:public-build-config
+
       - name: Build public artifact and enforce no-key guard
         env:
+          PUBLIC_BASE_PATH: "/taiwan-uv-heat-dashboard/"
           VITE_CWA_API_KEY: ""
         run: npm run build:public
 

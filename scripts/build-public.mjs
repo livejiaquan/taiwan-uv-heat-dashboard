@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { extname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import { expectedAssetPrefix, resolvePublicBasePath } from "./public-build-config.mjs";
 
 const projectRoot = fileURLToPath(new URL("..", import.meta.url));
 const distRoot = join(projectRoot, "dist");
@@ -15,13 +16,20 @@ if (process.env.VITE_CWA_API_KEY?.trim()) {
   fail("VITE_CWA_API_KEY must be empty; public Pages cannot ship a client credential.");
 }
 
+let publicBasePath;
+try {
+  publicBasePath = resolvePublicBasePath(process.env.PUBLIC_BASE_PATH);
+} catch (error) {
+  fail(error instanceof Error ? error.message : String(error));
+}
+
 const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
 const build = spawnSync(npmCommand, ["run", "build"], {
   cwd: projectRoot,
   stdio: "inherit",
   env: {
     ...process.env,
-    VITE_BASE_PATH: "/taiwan-uv-heat-dashboard/",
+    VITE_BASE_PATH: publicBasePath,
     VITE_CWA_API_KEY: "",
   },
 });
@@ -80,12 +88,11 @@ const indexPath = join(distRoot, "index.html");
 if (!existsSync(indexPath)) fail("dist/index.html is missing.");
 
 const indexHtml = readFileSync(indexPath, "utf8");
-const expectedBasePath = "/taiwan-uv-heat-dashboard/";
-const expectedAssetPrefix = `${expectedBasePath}assets/`;
-if (indexHtml.includes("/src/main.tsx") || !indexHtml.includes(expectedAssetPrefix)) {
-  fail(`dist/index.html does not reference compiled Pages assets under ${expectedBasePath}.`);
+const assetPrefix = expectedAssetPrefix(publicBasePath);
+if (indexHtml.includes("/src/main.tsx") || !indexHtml.includes(assetPrefix)) {
+  fail(`dist/index.html does not reference compiled assets under ${publicBasePath}.`);
 }
 
 console.log(
-  `Public build guard passed: ${files.length} artifact files, no client key, no legacy demo markers.`,
+  `Public build guard passed: ${files.length} artifact files, base ${publicBasePath}, no client key, no legacy demo markers.`,
 );
