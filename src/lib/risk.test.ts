@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildDashboardData, loadCwaBundle } from "./cwa";
+import { buildDashboardData, loadCwaBundle, parseForecastPayload } from "./cwa";
 import { heatRiskLevel, overallRiskLevel, uvRiskLevel } from "./risk";
 
 describe("risk levels", () => {
@@ -98,6 +98,44 @@ describe("CWA bundle loading", () => {
     expect(result.bundle?.observations).toBeUndefined();
     expect(result.bundle?.dailyUv).toBeUndefined();
     expect(result.errors).toHaveLength(2);
+  });
+});
+
+describe("forecast parsing", () => {
+  it("uses the hottest temperature across the full 36-hour forecast", () => {
+    const [forecast] = parseForecastPayload({
+      records: {
+        location: [
+          {
+            locationName: "臺北市",
+            weatherElement: [
+              {
+                elementName: "MaxT",
+                time: [
+                  {
+                    startTime: "2026-08-15T06:00:00+08:00",
+                    endTime: "2026-08-15T18:00:00+08:00",
+                    parameter: { parameterName: "31" },
+                  },
+                  {
+                    startTime: "2026-08-15T18:00:00+08:00",
+                    endTime: "2026-08-16T06:00:00+08:00",
+                    parameter: { parameterName: "36" },
+                  },
+                  {
+                    startTime: "2026-08-16T06:00:00+08:00",
+                    endTime: "2026-08-16T18:00:00+08:00",
+                    parameter: { parameterName: "34" },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(forecast.maxTemperature).toBe(36);
   });
 });
 

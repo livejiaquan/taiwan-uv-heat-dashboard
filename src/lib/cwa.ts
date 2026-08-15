@@ -268,14 +268,22 @@ export const parseForecastPayload = (payload: unknown): CountyForecast[] => {
       const elements = asArray(record.weatherElement);
       const getElement = (name: string) =>
         elements.find((element) => asRecord(element).elementName === name);
-      const firstTime = (element: unknown) =>
-        asRecord(asArray(asRecord(element).time)[0]);
+      const times = (element: unknown) =>
+        asArray(asRecord(element).time).map((time) => asRecord(time));
       const parameterName = (time: Record<string, unknown>) =>
         toText(asRecord(time.parameter).parameterName);
+      const pickHottestTime = (element: unknown) =>
+        times(element)
+          .map((time) => ({ time, value: toNumber(parameterName(time)) }))
+          .filter(
+            (item): item is { time: Record<string, unknown>; value: number } =>
+              item.value !== undefined,
+          )
+          .sort((a, b) => b.value - a.value)[0]?.time ?? {};
 
-      const maxTime = firstTime(getElement("MaxT"));
-      const minTime = firstTime(getElement("MinT"));
-      const weatherTime = firstTime(getElement("Wx"));
+      const maxTime = pickHottestTime(getElement("MaxT"));
+      const minTime = times(getElement("MinT"))[0] ?? {};
+      const weatherTime = times(getElement("Wx"))[0] ?? {};
 
       return {
         county,
