@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildDashboardData, loadCwaBundle, parseForecastPayload } from "./cwa";
+import {
+  buildDashboardData,
+  fetchCwaJson,
+  loadCwaBundle,
+  parseForecastPayload,
+} from "./cwa";
 import { heatRiskLevel, overallRiskLevel, uvRiskLevel } from "./risk";
 
 describe("risk levels", () => {
@@ -17,6 +22,42 @@ describe("risk levels", () => {
 
     expect(overallRiskLevel(missing, missing).tone).toBe("unknown");
     expect(overallRiskLevel(missing, highHeat).tone).toBe("very-high");
+  });
+});
+
+describe("CWA requests", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it("aborts a stalled request after ten seconds", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(
+        (_url: string, init?: RequestInit) =>
+          new Promise((_resolve, reject) => {
+            const signal = init?.signal;
+            if (!signal) {
+              reject(new Error("missing abort signal"));
+              return;
+            }
+            signal.addEventListener("abort", () =>
+              reject(new DOMException("aborted", "AbortError")),
+            );
+          }),
+      ),
+    );
+
+    const request = fetchCwaJson("O-A0003-001", "test-key");
+    const rejection = expect(request).rejects.toThrow(
+      "O-A0003-001 request timed out",
+    );
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    await rejection;
   });
 });
 

@@ -17,6 +17,7 @@ import type {
 } from "./types";
 
 const CWA_BASE = "https://opendata.cwa.gov.tw/api/v1/rest/datastore";
+const CWA_REQUEST_TIMEOUT_MS = 10_000;
 
 const toNumber = (value: unknown): number | undefined => {
   if (value === null || value === undefined) return undefined;
@@ -73,9 +74,26 @@ export const fetchCwaJson = async (
   url.searchParams.set("Authorization", apiKey);
   url.searchParams.set("format", "JSON");
 
-  const response = await fetch(url.toString(), {
-    headers: { Accept: "application/json" },
-  });
+  const controller = new AbortController();
+  const timeout = globalThis.setTimeout(
+    () => controller.abort(),
+    CWA_REQUEST_TIMEOUT_MS,
+  );
+
+  let response: Response;
+  try {
+    response = await fetch(url.toString(), {
+      headers: { Accept: "application/json" },
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new Error(`${dataId} request timed out`);
+    }
+    throw error;
+  } finally {
+    globalThis.clearTimeout(timeout);
+  }
 
   if (!response.ok) {
     throw new Error(`${dataId} HTTP ${response.status}`);
