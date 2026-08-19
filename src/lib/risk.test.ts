@@ -3,7 +3,9 @@ import {
   buildDashboardData,
   fetchCwaJson,
   loadCwaBundle,
+  parseDailyUvPayload,
   parseForecastPayload,
+  parseObservationPayload,
 } from "./cwa";
 import { heatRiskLevel, overallRiskLevel, uvRiskLevel } from "./risk";
 
@@ -177,6 +179,39 @@ describe("forecast parsing", () => {
     });
 
     expect(forecast.maxTemperature).toBe(36);
+  });
+});
+
+describe("source timestamp parsing", () => {
+  it("does not invent a current timestamp for observations without source time", () => {
+    const [observation] = parseObservationPayload({
+      records: {
+        Station: [
+          {
+            StationId: "TEST",
+            StationName: "測試站",
+            GeoInfo: { CountyName: "臺北市" },
+            WeatherElement: { AirTemperature: "32" },
+          },
+        ],
+      },
+    });
+
+    expect(observation.temperature).toBe(32);
+    expect(observation.observedAt).toBeUndefined();
+  });
+
+  it("does not invent a current timestamp for daily UV records without source time", () => {
+    const [observation] = parseDailyUvPayload({
+      records: {
+        weatherElement: {
+          location: [{ CountyName: "臺北市", UVIndex: "8" }],
+        },
+      },
+    });
+
+    expect(observation.uvIndex).toBe(8);
+    expect(observation.observedAt).toBeUndefined();
   });
 });
 

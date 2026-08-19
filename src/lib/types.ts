@@ -33,7 +33,7 @@ export interface StationObservation {
   stationName: string;
   county: string;
   town?: string;
-  observedAt: string;
+  observedAt?: string;
   temperature?: number;
   humidity?: number;
   uvIndex?: number;

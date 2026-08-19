@@ -219,8 +219,7 @@ export const parseObservationPayload = (payload: unknown): StationObservation[] 
         observedAt:
           toText(obsTime.DateTime) ??
           toText(record.DateTime) ??
-          toText(record.observedAt) ??
-          new Date().toISOString(),
+          toText(record.observedAt),
         temperature,
         humidity,
         uvIndex,
@@ -263,8 +262,7 @@ export const parseDailyUvPayload = (payload: unknown): StationObservation[] => {
         observedAt:
           toText(record.Date) ??
           toText(record.DateTime) ??
-          toText(record.time) ??
-          new Date().toISOString(),
+          toText(record.time),
         uvIndex:
           toNumber(record.UVIndex) ??
           toNumber(record.UVI) ??
