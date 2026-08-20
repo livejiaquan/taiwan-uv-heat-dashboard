@@ -18,6 +18,7 @@ import type {
 
 const CWA_BASE = "https://opendata.cwa.gov.tw/api/v1/rest/datastore";
 const CWA_REQUEST_TIMEOUT_MS = 10_000;
+const SOURCE_CLOCK_SKEW_MS = 5 * 60 * 1000;
 
 const toNumber = (value: unknown): number | undefined => {
   if (value === null || value === undefined) return undefined;
@@ -64,7 +65,12 @@ const findElementValue = (
 const latestIso = (dates: Array<string | undefined>): string | undefined =>
   dates
     .filter((date): date is string => Boolean(date))
-    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0];
+    .map((date) => ({ date, timestamp: new Date(date).getTime() }))
+    .filter(
+      ({ timestamp }) =>
+        Number.isFinite(timestamp) && timestamp <= Date.now() + SOURCE_CLOCK_SKEW_MS,
+    )
+    .sort((a, b) => b.timestamp - a.timestamp)[0]?.date;
 
 export const fetchCwaJson = async (
   dataId: string,

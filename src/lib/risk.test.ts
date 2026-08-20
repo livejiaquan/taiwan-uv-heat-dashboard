@@ -225,4 +225,25 @@ describe("dashboard data quality", () => {
       true,
     );
   });
+
+  it("does not let an implausible future source timestamp make live data look fresh", () => {
+    const dashboard = buildDashboardData("live", [], {
+      observations: {
+        records: {
+          Station: [
+            {
+              StationId: "TEST",
+              StationName: "測試站",
+              GeoInfo: { CountyName: "臺北市" },
+              ObsTime: { DateTime: "2099-01-01T00:00:00+08:00" },
+              WeatherElement: { AirTemperature: "32" },
+            },
+          ],
+        },
+      },
+    });
+
+    expect(dashboard.stats.latestUpdate).toBeUndefined();
+    expect(dashboard.stats.stale).toBe(true);
+  });
 });
