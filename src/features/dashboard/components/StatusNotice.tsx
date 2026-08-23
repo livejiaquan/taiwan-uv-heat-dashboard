@@ -9,7 +9,7 @@ export function StatusNotice({ data }: { data: DashboardData }) {
     data.stats.dataMode === "live"
   ) {
     return (
-      <div className="rounded-2xl border border-reef-100 bg-white/80 p-4 text-sm font-semibold text-reef-700 shadow-card backdrop-blur">
+      <div className="rounded-2xl border border-reef-100 bg-reef-50/65 p-4 text-sm font-semibold text-reef-700 shadow-card backdrop-blur" role="status">
         <div className="flex items-center gap-2">
           <ShieldCheck className="h-5 w-5" aria-hidden="true" />
           CWA 即時資料已載入，資料新鮮度正常。
@@ -19,12 +19,12 @@ export function StatusNotice({ data }: { data: DashboardData }) {
   }
 
   return (
-    <div className="rounded-2xl border border-sun-300 bg-white/85 p-4 shadow-card backdrop-blur">
+    <div className="rounded-2xl border border-sun-300 bg-sun-50/75 p-4 shadow-card backdrop-blur" role="status">
       <div className="flex gap-3">
         <AlertTriangle className="mt-0.5 h-5 w-5 flex-none text-sun-600" />
         <div className="text-sm leading-6 text-ink-700">
           <p className="font-black text-ink-900">
-            {data.stats.dataMode === "demo" ? "目前顯示示範資料" : "資料狀態需要留意"}
+            {data.stats.dataMode === "demo" ? "目前顯示示範資料" : "部分資料降級：判讀範圍受限"}
           </p>
           <p>
             {data.stats.missingDataCount

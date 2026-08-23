@@ -16,12 +16,10 @@ export default {
         ],
       },
       colors: {
+        canvas: "#F6F7F2",
+        line: "#C9D4CC",
         sun: {
-          50: "#fff9eb",
-          100: "#fff0c7",
-          300: "#ffd76a",
-          500: "#f59e0b",
-          600: "#d97706",
+          50: "#FFF5EB", 100: "#FFE5C2", 300: "#FDBA74", 500: "#EA6A22", 600: "#C2410C",
         },
         reef: {
           50: "#eefdf8",
@@ -30,26 +28,23 @@ export default {
           700: "#0f766e",
         },
         heat: {
-          50: "#fff1f0",
-          100: "#ffe0dc",
-          500: "#ef4444",
-          700: "#b91c1c",
+          50: "#FFF1F3", 100: "#FFE0E6", 500: "#E11D48", 700: "#9F1239",
         },
         ink: {
-          900: "#182033",
-          700: "#334155",
+          900: "#10211C",
+          700: "#365148",
           500: "#64748b",
           200: "#d9e2ef",
           100: "#eef3f8",
         },
       },
       boxShadow: {
-        card: "0 18px 45px -24px rgba(24, 32, 51, 0.35)",
+        card: "0 12px 32px -22px rgba(16, 33, 28, 0.28)",
         lift: "0 22px 50px -28px rgba(185, 28, 28, 0.34)",
       },
       backgroundImage: {
         "sun-field":
-          "linear-gradient(135deg, rgba(255, 249, 235, 0.94) 0%, rgba(238, 253, 248, 0.86) 46%, rgba(255, 241, 240, 0.9) 100%)",
+          "radial-gradient(circle at 3% 4%, rgba(234, 106, 34, 0.11), transparent 28%), radial-gradient(circle at 94% 14%, rgba(225, 29, 72, 0.08), transparent 24%), #F6F7F2",
       },
     },
   },
