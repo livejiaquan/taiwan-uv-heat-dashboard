@@ -1,11 +1,13 @@
 import { SunMedium } from "lucide-react";
+import { FamilyMark } from "./FamilyMark";
 
 export function LoadingState() {
   return (
     <div className="grid min-h-screen place-items-center bg-sun-field px-4">
-      <div className="w-full max-w-sm rounded-2xl border border-white/80 bg-white/80 p-8 text-center shadow-card backdrop-blur">
+      <div className="w-full max-w-sm rounded-2xl border border-line bg-white/85 p-6 text-center shadow-card backdrop-blur sm:p-8" role="status" aria-live="polite">
+        <div className="text-left"><FamilyMark /></div>
         <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-sun-100 text-sun-600 shadow-inner">
-          <SunMedium className="h-8 w-8 animate-spin [animation-duration:3.5s]" />
+          <SunMedium className="h-8 w-8 animate-spin [animation-duration:3.5s]" aria-hidden="true" />
         </div>
         <h1 className="mt-5 text-2xl font-black text-ink-900">載入氣象風險資料</h1>
         <p className="mt-2 text-sm leading-6 text-ink-500">

@@ -1,5 +1,6 @@
 import { AlertTriangle, ExternalLink, RefreshCw, ShieldCheck } from "lucide-react";
 import { LoadingState } from "./components/LoadingState";
+import { FamilyMark } from "./components/FamilyMark";
 import { DashboardPage } from "./features/dashboard/DashboardPage";
 import { useDashboardData } from "./features/dashboard/useDashboardData";
 
@@ -10,10 +11,11 @@ function App() {
 
   if (dashboard.status === "error" || !dashboard.data) {
     return (
-      <main className="min-h-screen bg-sun-field px-4 py-8 sm:py-14">
-        <section className="mx-auto max-w-3xl overflow-hidden rounded-3xl border border-white/80 bg-white/90 shadow-card backdrop-blur">
-          <div className="bg-[linear-gradient(120deg,rgba(245,158,11,0.18),rgba(20,184,166,0.14),rgba(239,68,68,0.10))] p-6 sm:p-10">
-            <div className="inline-flex items-center gap-2 rounded-full border border-sun-300 bg-white/80 px-3 py-1 text-sm font-black text-sun-600">
+      <main className="min-h-screen bg-sun-field px-4 py-6 sm:py-10">
+        <section className="mx-auto max-w-3xl overflow-hidden rounded-3xl border border-line bg-white/90 shadow-card backdrop-blur">
+          <div className="border-b border-line bg-[linear-gradient(120deg,rgba(234,106,34,0.12),rgba(15,118,110,0.10),rgba(225,29,72,0.08))] p-6 sm:p-10">
+            <FamilyMark />
+            <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-sun-300 bg-white/80 px-3 py-1 text-sm font-black text-sun-600">
               <AlertTriangle className="h-4 w-4" aria-hidden="true" />
               正式資料尚未可用
             </div>
@@ -24,7 +26,7 @@ function App() {
               {dashboard.error ?? "中央氣象署資料目前無法驗證。"}
               本站不會以範例、舊快照或預報值代替現在觀測。
             </p>
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="mt-6 flex flex-wrap gap-3" aria-label="資料復原操作">
               <a
                 className="btn-primary"
                 href="https://www.cwa.gov.tw/"
@@ -43,7 +45,7 @@ function App() {
 
           <div className="grid gap-4 p-6 sm:grid-cols-2 sm:p-10">
             <a
-              className="rounded-2xl border border-ink-100 bg-ink-100/40 p-4 transition hover:border-sun-300 hover:bg-sun-50"
+              className="rounded-2xl border border-line bg-canvas p-4 transition duration-200 hover:border-sun-300 hover:bg-sun-50"
               href="https://www.cwa.gov.tw/V8/C/P/Warning/W29.html"
               target="_blank"
               rel="noreferrer"
@@ -54,7 +56,7 @@ function App() {
               </p>
             </a>
             <a
-              className="rounded-2xl border border-ink-100 bg-ink-100/40 p-4 transition hover:border-reef-100 hover:bg-reef-50"
+              className="rounded-2xl border border-line bg-canvas p-4 transition duration-200 hover:border-reef-100 hover:bg-reef-50"
               href="https://www.hpa.gov.tw/5020/20092/n"
               target="_blank"
               rel="noreferrer"
@@ -64,7 +66,7 @@ function App() {
                 了解高風險族群、預防方式與熱傷害處置。
               </p>
             </a>
-            <div className="rounded-2xl border border-heat-100 bg-heat-50/60 p-4 sm:col-span-2">
+            <div className="rounded-2xl border border-heat-100 bg-heat-50/60 p-4 sm:col-span-2" role="note">
               <div className="flex gap-3">
                 <ShieldCheck className="mt-0.5 h-5 w-5 flex-none text-heat-700" aria-hidden="true" />
                 <p className="text-sm leading-6 text-ink-700">

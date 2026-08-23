@@ -19,7 +19,7 @@ export function RankingPanel({
   const max = Math.max(...ranked.map((item) => item.priorityScore), 1);
 
   return (
-    <section className="rounded-2xl border border-white/75 bg-white/80 p-5 shadow-card backdrop-blur">
+    <section className="rounded-2xl border border-line bg-white/80 p-5 shadow-card backdrop-blur">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-bold text-heat-700">Observed UV Ranking</p>

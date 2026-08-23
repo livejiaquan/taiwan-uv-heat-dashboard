@@ -3,7 +3,7 @@ import { ExternalLink, HeartPulse } from "lucide-react";
 export function HealthSafetyNotice() {
   return (
     <aside
-      className="mt-5 rounded-2xl border border-heat-100 bg-white/85 p-5 shadow-card backdrop-blur"
+      className="mt-5 rounded-2xl border border-heat-100 bg-heat-50/45 p-5 shadow-card backdrop-blur"
       aria-labelledby="heat-safety-title"
     >
       <div className="flex gap-3">

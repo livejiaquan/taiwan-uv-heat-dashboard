@@ -47,9 +47,9 @@ export const riskCopy: Record<RiskTone, Omit<RiskLevel, "score">> = {
     tone: "extreme",
     label: "極端風險",
     shortLabel: "極端",
-    colorClass: "text-fuchsia-800",
-    bgClass: "bg-fuchsia-50",
-    borderClass: "border-fuchsia-200",
+    colorClass: "text-heat-700",
+    bgClass: "bg-heat-50",
+    borderClass: "border-heat-100",
   },
 };
 

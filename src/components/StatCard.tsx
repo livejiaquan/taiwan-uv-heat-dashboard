@@ -26,7 +26,7 @@ export function StatCard({
 }: StatCardProps) {
   return (
     <article
-      className={`relative overflow-hidden rounded-xl border border-white/80 border-l-4 p-4 shadow-card ${toneClass[tone]}`}
+      className={`relative overflow-hidden rounded-2xl border border-line border-l-4 p-4 shadow-card ${toneClass[tone]}`}
     >
       <div className="absolute right-3 top-3 rounded-full bg-white/70 p-2 text-current shadow-sm">
         <Icon className="h-5 w-5" aria-hidden="true" />

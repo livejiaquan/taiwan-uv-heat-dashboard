@@ -16,7 +16,7 @@ export function AdviceSection({ counties, selected }: AdviceSectionProps) {
 
   return (
     <section className="mt-8 grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
-      <div className="rounded-2xl border border-white/75 bg-white/80 p-5 shadow-card backdrop-blur">
+      <div className="rounded-2xl border border-line bg-white/80 p-5 shadow-card backdrop-blur">
         <div className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-reef-700" />
           <h2 className="text-2xl font-black text-ink-900">目前 UV 觀測較低</h2>
@@ -47,7 +47,7 @@ export function AdviceSection({ counties, selected }: AdviceSectionProps) {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-white/75 bg-white/80 p-5 shadow-card backdrop-blur">
+      <div className="rounded-2xl border border-line bg-white/80 p-5 shadow-card backdrop-blur">
         <div className="flex items-center gap-2">
           <Activity className="h-5 w-5 text-heat-700" />
           <h2 className="text-2xl font-black text-ink-900">UV 防護提醒</h2>

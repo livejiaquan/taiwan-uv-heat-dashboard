@@ -23,5 +23,5 @@ export const toneStyles: Record<RiskTone, string> = {
   moderate: "from-sun-300 to-sun-500",
   high: "from-orange-400 to-orange-600",
   "very-high": "from-heat-500 to-orange-600",
-  extreme: "from-fuchsia-600 to-heat-700",
+  extreme: "from-heat-500 to-heat-700",
 };

@@ -22,7 +22,7 @@ export function DetailPanel({ county }: { county: CountyRisk }) {
     Boolean(county.forecastEndTime);
 
   return (
-    <section className="rounded-2xl border border-white/75 bg-white/85 p-5 shadow-card backdrop-blur">
+    <section className="rounded-2xl border border-line bg-white/85 p-5 shadow-card backdrop-blur">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="flex items-center gap-1 text-sm font-bold text-reef-700">
@@ -42,6 +42,7 @@ export function DetailPanel({ county }: { county: CountyRisk }) {
             value={formatInteger(county.uvIndex)}
             unit="UVI"
             level={county.uvStale ? "觀測已超過 45 分鐘" : county.uvLevel.label}
+            tone="uv"
             helper={`CWA O-A0003-001 · ${county.uvStationName ?? "測站未知"} · ${formatTime(county.uvObservedAt)}`}
           />
           <MetricBlock
@@ -56,6 +57,7 @@ export function DetailPanel({ county }: { county: CountyRisk }) {
                   ? "本站估算，非官方高溫燈號"
                   : "測站氣溫，非熱傷害分級"
             }
+            tone="heat"
             helper={`CWA O-A0003-001 · ${heatStationName ?? "測站未知"} · ${formatTime(heatObservedAt)}`}
           />
         </div>
@@ -127,6 +129,7 @@ function MetricBlock({
   unit,
   level,
   helper,
+  tone,
 }: {
   icon: LucideIcon;
   label: string;
@@ -134,18 +137,19 @@ function MetricBlock({
   unit: string;
   level: string;
   helper: string;
+  tone: "uv" | "heat";
 }) {
   return (
     <div className="rounded-xl bg-white/80 p-4 shadow-sm">
       <div className="flex items-center gap-2 text-sm font-bold text-ink-500">
-        <Icon className="h-4 w-4 text-sun-600" />
+        <Icon className={`h-4 w-4 ${tone === "uv" ? "text-sun-600" : "text-heat-700"}`} />
         {label}
       </div>
       <div className="mt-3 flex items-end gap-2">
         <strong className="text-4xl font-black leading-none text-ink-900">{value}</strong>
         <span className="pb-1 text-sm font-black text-ink-500">{unit}</span>
       </div>
-      <p className="mt-2 text-sm font-bold text-heat-700">{level}</p>
+      <p className={`mt-2 text-sm font-bold ${tone === "uv" ? "text-sun-600" : "text-heat-700"}`}>{level}</p>
       <p className="mt-2 text-xs leading-5 text-ink-500">{helper}</p>
     </div>
   );

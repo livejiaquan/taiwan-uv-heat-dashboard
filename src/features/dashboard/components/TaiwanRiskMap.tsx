@@ -20,7 +20,7 @@ const markerColors: Record<RiskTone, { fill: string; stroke: string }> = {
   moderate: { fill: "#f59e0b", stroke: "#b45309" },
   high: { fill: "#f97316", stroke: "#c2410c" },
   "very-high": { fill: "#ef4444", stroke: "#b91c1c" },
-  extreme: { fill: "#c026d3", stroke: "#86198f" },
+  extreme: { fill: "#E11D48", stroke: "#9F1239" },
 };
 
 export function TaiwanRiskMap({ counties, selectedCounty, onSelect }: TaiwanRiskMapProps) {
@@ -102,7 +102,7 @@ export function TaiwanRiskMap({ counties, selectedCounty, onSelect }: TaiwanRisk
   }, [selected]);
 
   return (
-    <section className="rounded-2xl border border-white/75 bg-white/85 p-5 shadow-card backdrop-blur">
+    <section className="rounded-2xl border border-line bg-white/85 p-5 shadow-card backdrop-blur">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="flex items-center gap-1 text-sm font-bold text-reef-700">
@@ -118,7 +118,7 @@ export function TaiwanRiskMap({ counties, selectedCounty, onSelect }: TaiwanRisk
       </div>
 
       <div className="mt-4 overflow-hidden rounded-2xl border border-ink-100 bg-ink-100/60">
-        <div ref={containerRef} className="risk-map" aria-label="台灣縣市 UV 測站觀測地圖" />
+        <div ref={containerRef} className="risk-map" role="region" aria-label="台灣縣市 UV 測站觀測地圖" />
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-ink-500">

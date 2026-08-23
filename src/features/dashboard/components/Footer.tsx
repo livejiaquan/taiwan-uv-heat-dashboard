@@ -1,14 +1,11 @@
-import { Waves } from "lucide-react";
+import { FamilyMark } from "../../../components/FamilyMark";
 
 export function Footer() {
   return (
-    <footer className="mt-8 rounded-2xl border border-white/75 bg-ink-900 p-5 text-white shadow-card">
+    <footer className="mt-8 rounded-2xl border border-ink-700 bg-ink-900 p-5 text-white shadow-card">
       <div className="grid gap-5 md:grid-cols-[1.15fr_0.85fr]">
         <div>
-          <div className="flex items-center gap-2">
-            <Waves className="h-5 w-5 text-reef-100" />
-            <h2 className="text-lg font-black">台灣戶外風險快照</h2>
-          </div>
+          <FamilyMark inverse />
           <p className="mt-2 max-w-3xl text-sm leading-6 text-white/70">
             觀測與預報資料來自交通部中央氣象署 O-A0003-001、F-C0032-001；健康文字依國民健康署指引整理。本專案非官方服務，不取代正式警特報或醫療判斷。
           </p>

@@ -42,19 +42,24 @@ export function DashboardPage({ data, refreshing, onRefresh }: DashboardPageProp
 
   return (
     <main className="min-h-screen bg-sun-field text-ink-900">
+      <a className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-reef-700 focus:px-4 focus:py-2 focus:text-white" href="#main-content">
+        跳至主要內容
+      </a>
       <Hero data={data} refreshing={refreshing} onRefresh={onRefresh} />
 
-      <section className="mx-auto -mt-6 max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
+      <section id="main-content" className="mx-auto max-w-7xl px-4 pb-10 pt-6 sm:px-6 lg:px-8">
         <StatusNotice data={data} />
         <HealthSafetyNotice />
         <StatsGrid data={data} />
 
         <div className="mt-6 grid gap-6 xl:grid-cols-[1.18fr_0.82fr]">
-          <TaiwanRiskMap
-            counties={data.counties}
-            onSelect={setSelectedCounty}
-            selectedCounty={selected?.county}
-          />
+          <div id="risk-map">
+            <TaiwanRiskMap
+              counties={data.counties}
+              onSelect={setSelectedCounty}
+              selectedCounty={selected?.county}
+            />
+          </div>
           {selected ? <DetailPanel county={selected} /> : null}
         </div>
 
