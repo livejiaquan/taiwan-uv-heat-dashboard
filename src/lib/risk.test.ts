@@ -18,7 +18,7 @@ describe("risk levels", () => {
     expect(heatRiskLevel(undefined, undefined).tone).toBe("unknown");
   });
 
-  it("keeps overall risk unknown only when both dimensions are missing", () => {
+  it("keeps unknown dimensions from implying low overall risk", () => {
     const missing = uvRiskLevel(undefined);
     const highHeat = heatRiskLevel(35, undefined);
 
@@ -220,7 +220,7 @@ describe("dashboard data quality", () => {
     const dashboard = buildDashboardData("live", [], {});
 
     expect(dashboard.stats.missingDataCount).toBe(dashboard.stats.totalCounties);
-    expect(dashboard.stats.safest).toBeUndefined();
+    expect(dashboard.stats.lowestRisk).toBeUndefined();
     expect(dashboard.counties.every((county) => county.overallLevel.tone === "unknown")).toBe(
       true,
     );
@@ -244,6 +244,6 @@ describe("dashboard data quality", () => {
     });
 
     expect(dashboard.stats.latestUpdate).toBeUndefined();
-    expect(dashboard.stats.stale).toBe(true);
+    expect(dashboard.stats.hasLimitedCoverage).toBe(true);
   });
 });

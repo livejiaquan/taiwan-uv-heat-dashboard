@@ -59,7 +59,7 @@ const level = (tone: RiskTone): RiskLevel => ({
 });
 
 export const uvRiskLevel = (uv?: number): RiskLevel => {
-  if (uv === undefined || Number.isNaN(uv)) return level("unknown");
+  if (uv === undefined || !Number.isFinite(uv) || uv < 0) return level("unknown");
   if (uv <= 2) return level("low");
   if (uv <= 5) return level("moderate");
   if (uv <= 7) return level("high");
@@ -78,7 +78,7 @@ export const heatRiskLevel = (heatIndex?: number, forecastMax?: number): RiskLev
 };
 
 export const overallRiskLevel = (uv: RiskLevel, heat: RiskLevel): RiskLevel => {
-  if (uv.score < 0 && heat.score < 0) return level("unknown");
+  if ((uv.score < 0 || heat.score < 0) && Math.max(uv.score, heat.score) < 2) return level("unknown");
   return level(riskOrder[Math.max(uv.score, heat.score)]);
 };
 
@@ -86,7 +86,8 @@ export const heatIndexCelsius = (
   temperature?: number,
   humidity?: number,
 ): number | undefined => {
-  if (temperature === undefined || humidity === undefined) return temperature;
+  if (temperature === undefined || !Number.isFinite(temperature)) return undefined;
+  if (humidity === undefined || !Number.isFinite(humidity) || humidity < 0 || humidity > 100) return temperature;
   if (temperature < 27 || humidity < 40) return temperature;
 
   const tempF = (temperature * 9) / 5 + 32;
@@ -106,7 +107,16 @@ export const heatIndexCelsius = (
 };
 
 export const buildAdvice = (county: CountyRisk): AdviceItem[] => {
-  const advice: AdviceItem[] = [];
+  if (county.dataMode === "demo") return [{
+    title: "示範情境，請勿據此安排外出",
+    body: "數值為人工範例，沒有實際觀測時間。請查看中央氣象署最新觀測、預報與警報。",
+    tone: "unknown",
+  }];
+  const advice: AdviceItem[] = county.dataStatus === "current" ? [] : [{
+    title: "無法確認目前風險",
+    body: "觀測過期、缺漏或只有日最大值／預報時，不能判定目前低風險。請先確認官方最新資訊。",
+    tone: "unknown",
+  }];
 
   if (county.uvLevel.tone === "unknown") {
     advice.push({
@@ -126,10 +136,10 @@ export const buildAdvice = (county: CountyRisk): AdviceItem[] => {
       body: "長時間在戶外仍建議擦防曬，安排陰影休息點，避免讓兒童連續曝曬。",
       tone: county.uvLevel.tone,
     });
-  } else {
+  } else if (county.dataStatus === "current") {
     advice.push({
-      title: "戶外條件較穩定",
-      body: "短時間活動風險較低，但山區、海邊或水面反射仍可能提高曝曬量。",
+      title: "UV 指標偏低",
+      body: "這只代表 UV 指標，仍須留意高溫與其他天氣警報；山區、海邊或水面反射可能增加曝曬。",
       tone: "low",
     });
   }
@@ -152,10 +162,10 @@ export const buildAdvice = (county: CountyRisk): AdviceItem[] => {
       body: "出門前先補水，活動中保留休息節奏，悶熱環境下避免一次拉高運動強度。",
       tone: county.heatLevel.tone,
     });
-  } else {
+  } else if (county.dataStatus === "current") {
     advice.push({
-      title: "適合輕量活動",
-      body: "仍要確認個人身體狀況，長時間活動建議攜帶水與防曬用品。",
+      title: "熱指標偏低",
+      body: "指標偏低不保證適合活動。仍要留意個人身體狀況，攜帶水與防曬用品。",
       tone: "low",
     });
   }

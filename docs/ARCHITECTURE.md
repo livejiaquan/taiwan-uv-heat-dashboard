@@ -19,7 +19,8 @@ src/
   lib/
     cwa.ts                        CWA fetchers, parsers, and county aggregation
     risk.ts                       UV, heat-index, risk-level, and advice model
-    format.ts                     Display formatting helpers
+    freshness.ts                  Source-time validation and low-risk eligibility
+    format.ts                     Taiwan-time display formatting helpers
     types.ts                      Shared domain types
 ```
 
@@ -50,7 +51,9 @@ The app treats raw API responses as untrusted `unknown` values until they are pa
 - `ready`: live or demo dashboard data is available.
 - `error`: no usable data could be built.
 - `degraded`: represented inside `DashboardData.stats.errors`.
-- `stale`: live data latest update is older than the threshold in `src/lib/cwa.ts`.
+- County provenance: `demo`, `current`, `limited`, `stale`, or `missing`, evaluated separately from field completeness.
+- Nationwide coverage: count of counties with current complete observations; no global freshness claim from one latest timestamp.
+- `useDashboardData()` retains source payloads and reevaluates their freshness on a timer/focus change without refetching.
 
 ## Risk Model
 

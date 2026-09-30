@@ -7,6 +7,7 @@ import {
   overallRiskLevel,
   uvRiskLevel,
 } from "./risk";
+import { isCurrentObservation, isTodaysDailyUv, isUsableForecast, lowRiskCounties, sourceTimestamp, SOURCE_CLOCK_SKEW_MS } from "./freshness";
 import type {
   CountyForecast,
   CountyRisk,
@@ -18,14 +19,17 @@ import type {
 
 const CWA_BASE = "https://opendata.cwa.gov.tw/api/v1/rest/datastore";
 const CWA_REQUEST_TIMEOUT_MS = 10_000;
-const SOURCE_CLOCK_SKEW_MS = 5 * 60 * 1000;
 
 const toNumber = (value: unknown): number | undefined => {
   if (value === null || value === undefined) return undefined;
-  const parsed = Number(String(value).trim());
+  if (typeof value !== "number" && typeof value !== "string") return undefined;
+  if (typeof value === "string" && !value.trim()) return undefined;
+  const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed <= -90) return undefined;
   return parsed;
 };
+
+const validUv = (value: number | undefined) => value !== undefined && value >= 0 ? value : undefined;
 
 const toText = (value: unknown): string | undefined => {
   if (typeof value === "string" && value.trim()) return value.trim();
@@ -62,13 +66,13 @@ const findElementValue = (
   return undefined;
 };
 
-const latestIso = (dates: Array<string | undefined>): string | undefined =>
+const latestIso = (dates: Array<string | undefined>, now: number): string | undefined =>
   dates
     .filter((date): date is string => Boolean(date))
-    .map((date) => ({ date, timestamp: new Date(date).getTime() }))
+    .map((date) => ({ date, timestamp: sourceTimestamp(date) ?? NaN }))
     .filter(
       ({ timestamp }) =>
-        Number.isFinite(timestamp) && timestamp <= Date.now() + SOURCE_CLOCK_SKEW_MS,
+        Number.isFinite(timestamp) && timestamp <= now + SOURCE_CLOCK_SKEW_MS,
     )
     .sort((a, b) => b.timestamp - a.timestamp)[0]?.date;
 
@@ -227,8 +231,8 @@ export const parseObservationPayload = (payload: unknown): StationObservation[] 
           toText(record.DateTime) ??
           toText(record.observedAt),
         temperature,
-        humidity,
-        uvIndex,
+        humidity: humidity !== undefined && humidity >= 0 && humidity <= 100 ? humidity : undefined,
+        uvIndex: uvIndex !== undefined && uvIndex >= 0 ? uvIndex : undefined,
       };
     })
     .filter((item): item is StationObservation => Boolean(item));
@@ -269,16 +273,16 @@ export const parseDailyUvPayload = (payload: unknown): StationObservation[] => {
           toText(record.Date) ??
           toText(record.DateTime) ??
           toText(record.time),
-        uvIndex:
+        uvIndex: validUv(
           toNumber(record.UVIndex) ??
           toNumber(record.UVI) ??
-          findElementValue(record.weatherElement, ["UVIndex", "UVI", "紫外線指數"]),
+          findElementValue(record.weatherElement, ["UVIndex", "UVI", "紫外線指數"])),
       };
     })
     .filter((item): item is StationObservation => Boolean(item));
 };
 
-export const parseForecastPayload = (payload: unknown): CountyForecast[] => {
+export const parseForecastPayload = (payload: unknown, now?: number): CountyForecast[] => {
   const locations = asArray(asRecord(asRecord(payload).records).location);
 
   return locations
@@ -296,6 +300,7 @@ export const parseForecastPayload = (payload: unknown): CountyForecast[] => {
         toText(asRecord(time.parameter).parameterName);
       const pickHottestTime = (element: unknown) =>
         times(element)
+          .filter((time) => now === undefined || isUsableForecast(toText(time.startTime), toText(time.endTime), now))
           .map((time) => ({ time, value: toNumber(parameterName(time)) }))
           .filter(
             (item): item is { time: Record<string, unknown>; value: number } =>
@@ -304,8 +309,14 @@ export const parseForecastPayload = (payload: unknown): CountyForecast[] => {
           .sort((a, b) => b.value - a.value)[0]?.time ?? {};
 
       const maxTime = pickHottestTime(getElement("MaxT"));
-      const minTime = times(getElement("MinT"))[0] ?? {};
-      const weatherTime = times(getElement("Wx"))[0] ?? {};
+      const matchingTime = (element: unknown) => {
+        const usable = times(element).filter((time) => now === undefined || isUsableForecast(toText(time.startTime), toText(time.endTime), now));
+        return (maxTime.startTime
+          ? usable.find((time) => time.startTime === maxTime.startTime && time.endTime === maxTime.endTime)
+          : usable[0]) ?? {};
+      };
+      const minTime = matchingTime(getElement("MinT"));
+      const weatherTime = matchingTime(getElement("Wx"));
 
       return {
         county,
@@ -330,27 +341,27 @@ const pickMax = <T>(
   selector: (item: T) => number | undefined,
 ): T | undefined =>
   values
-    .filter((item) => selector(item) !== undefined)
+    .filter((item) => Number.isFinite(selector(item)))
     .sort((a, b) => (selector(b) ?? -Infinity) - (selector(a) ?? -Infinity))[0];
 
 export const buildDashboardData = (
   mode: DataMode,
   errors: string[],
   bundle?: RawCwaBundle,
+  now = Date.now(),
 ): DashboardData => {
   const observations =
     mode === "demo" ? demoObservations : parseObservationPayload(bundle?.observations);
   const dailyUv =
     mode === "demo" ? [] : parseDailyUvPayload(bundle?.dailyUv);
   const forecasts =
-    mode === "demo" ? demoForecasts : parseForecastPayload(bundle?.forecast);
+    mode === "demo" ? demoForecasts : parseForecastPayload(bundle?.forecast, now);
   const forecastByCounty = new Map(forecasts.map((item) => [item.county, item]));
 
   const countyRisks: CountyRisk[] = counties.map((meta) => {
-    const countyObservations = observations.filter(
-      (item) => item.county === meta.county,
-    );
-    const countyDailyUv = dailyUv.filter((item) => item.county === meta.county);
+    const rawObservations = observations.filter((item) => item.county === meta.county && (item.temperature !== undefined || item.uvIndex !== undefined));
+    const countyObservations = rawObservations.filter((item) => mode === "demo" || isCurrentObservation(item.observedAt, now));
+    const countyDailyUv = dailyUv.filter((item) => item.county === meta.county && isTodaysDailyUv(item.observedAt, now));
     const hottest = pickMax(countyObservations, (item) => item.temperature);
     const mostHumidHeat = pickMax(countyObservations, (item) =>
       heatIndexCelsius(item.temperature, item.humidity),
@@ -372,8 +383,19 @@ export const buildDashboardData = (
             ? "dailyMax"
             : "missing";
     const uvLevel = uvRiskLevel(uvIndex);
-    const heatLevel = heatRiskLevel(heatIndex, forecast?.maxTemperature);
-    const overallLevel = overallRiskLevel(uvLevel, heatLevel);
+    const measuredHeatLevel = heatRiskLevel(heatIndex, forecast?.maxTemperature);
+    const hasHeatObservation = mostHumidHeat?.temperature !== undefined && mostHumidHeat?.humidity !== undefined;
+    const heatLevel = mode === "live" && !hasHeatObservation && measuredHeatLevel.score < 2
+      ? heatRiskLevel(undefined) : measuredHeatLevel;
+    const hasCurrentCoverage = currentUv?.uvIndex !== undefined && hasHeatObservation;
+    const dataStatus = mode === "demo" ? "demo" : hasCurrentCoverage ? "current"
+      : uvIndex !== undefined || heatIndex !== undefined || forecast?.maxTemperature !== undefined ? "limited"
+      : rawObservations.length || dailyUv.some((item) => item.county === meta.county) ? "stale" : "missing";
+    const measuredLevel = overallRiskLevel(uvLevel, heatLevel);
+    // An incomplete or non-current dataset can warn about known high values,
+    // but must never infer a reassuring overall level from the missing half.
+    const overallLevel = mode === "live" && dataStatus !== "current" && measuredLevel.score < 2
+      ? overallRiskLevel(uvRiskLevel(undefined), heatRiskLevel(undefined)) : measuredLevel;
     const hasUvData = uvIndex !== undefined;
     const hasHeatData =
       heatIndex !== undefined ||
@@ -387,12 +409,15 @@ export const buildDashboardData = (
           : "missing";
     const risk: CountyRisk = {
       ...meta,
-      observedAt: latestIso([
-        hottest?.observedAt,
-        mostHumidHeat?.observedAt,
-        currentUv?.observedAt,
-        dailyMaxUv?.observedAt,
-      ]),
+      dataMode: mode,
+      dataStatus,
+      observedAt: mode === "demo" ? undefined : latestIso([
+        hottest?.observedAt, mostHumidHeat?.observedAt, currentUv?.observedAt,
+      ], now),
+      uvObservedAt: currentUv?.observedAt ?? dailyMaxUv?.observedAt,
+      heatObservedAt: mostHumidHeat?.observedAt ?? hottest?.observedAt,
+      forecastStartTime: forecast?.startTime,
+      forecastEndTime: forecast?.endTime,
       stationCount: countyObservations.length,
       uvIndex,
       uvSource,
@@ -417,10 +442,8 @@ export const buildDashboardData = (
   });
 
   const sorted = [...countyRisks].sort((a, b) => b.overallScore - a.overallScore);
-  const latestUpdate = latestIso(countyRisks.map((item) => item.observedAt));
-  const latestAgeMinutes = latestUpdate
-    ? (Date.now() - new Date(latestUpdate).getTime()) / 60000
-    : Infinity;
+  const latestUpdate = latestIso(countyRisks.map((item) => item.observedAt), now);
+  const currentCountyCount = countyRisks.filter((item) => item.dataStatus === "current").length;
   const highestUv = pickMax(countyRisks, (item) => item.uvIndex);
   const highestHeat = pickMax(countyRisks, (item) =>
     Math.max(
@@ -429,7 +452,6 @@ export const buildDashboardData = (
       item.observedTemperature ?? -Infinity,
     ),
   );
-  const knownRiskCounties = countyRisks.filter((item) => item.overallScore >= 0);
 
   return {
     counties: sorted,
@@ -439,11 +461,12 @@ export const buildDashboardData = (
         .length,
       missingDataCount: countyRisks.filter((item) => item.dataQuality === "missing")
         .length,
-      stale: mode === "live" ? latestAgeMinutes > 45 : false,
+      currentCountyCount,
+      hasLimitedCoverage: currentCountyCount < countyRisks.length,
       latestUpdate,
       highestUv,
       highestHeat,
-      safest: [...knownRiskCounties].sort((a, b) => a.overallScore - b.overallScore)[0],
+      lowestRisk: lowRiskCounties(countyRisks)[0],
       dataMode: mode,
       sourceSummary:
         mode === "live"

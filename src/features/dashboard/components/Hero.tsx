@@ -10,7 +10,8 @@ interface HeroProps {
 }
 
 export function Hero({ data, refreshing, onRefresh }: HeroProps) {
-  const updateTone = data.stats.stale ? "text-heat-700" : "text-reef-700";
+  const demo = data.stats.dataMode === "demo";
+  const updateTone = data.stats.hasLimitedCoverage ? "text-heat-700" : "text-reef-700";
 
   return (
     <header className="relative overflow-hidden border-b border-line pb-10 pt-5 sm:pt-6">
@@ -22,26 +23,26 @@ export function Hero({ data, refreshing, onRefresh }: HeroProps) {
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/70 px-3 py-1 text-sm font-bold text-sun-600 shadow-sm backdrop-blur">
               <Sun className="h-4 w-4" aria-hidden="true" />
-              Taiwan CWA Open Data
+              {demo ? "DEMO · 非即時資料" : "Taiwan CWA Open Data"}
             </div>
             <h1 className="mt-4 text-4xl font-black leading-tight tracking-tight text-ink-900 sm:text-5xl">
-              現在適合外出嗎？先看 UV，再看熱風險
+              {demo ? "探索台灣 UV 與高溫風險示範" : "外出前，先確認 UV 與熱風險"}
             </h1>
             <p className="mt-3 max-w-2xl text-base leading-7 text-ink-700">
-              快速查看縣市 UV、高溫與資料新鮮度；各指標與來源模式均保留在畫面中。
+              查看縣市 UV、高溫與資料狀態；觀測、日最大值、預報與示範資料分別標示。
             </p>
           </div>
           <div className="rounded-2xl border border-line bg-white/85 p-4 shadow-card backdrop-blur">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-ink-500">
-                  資料新鮮度
+                  {demo ? "資料模式" : "最新可用觀測（台灣時間）"}
                 </p>
                 <p className={`mt-1 text-lg font-black ${updateTone}`}>
-                  {formatTime(data.stats.latestUpdate)}
+                  {demo ? "示範資料・無觀測時間" : formatTime(data.stats.latestUpdate)}
                 </p>
                 <p className="mt-1 text-xs font-semibold text-ink-500">
-                  {formatRelativeAge(data.stats.latestUpdate)} · {data.stats.sourceSummary}
+                  {demo ? "僅供功能展示" : `${formatRelativeAge(data.stats.latestUpdate)} · ${data.stats.currentCountyCount}/${data.stats.totalCounties} 縣市觀測齊全`} · {data.stats.sourceSummary}
                 </p>
               </div>
               <button

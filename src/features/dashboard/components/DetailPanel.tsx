@@ -3,6 +3,7 @@ import { MapPin, Sun, ThermometerSun } from "lucide-react";
 import { RiskPill } from "../../../components/RiskPill";
 import { formatInteger, formatNumber, formatTime } from "../../../lib/format";
 import type { CountyRisk } from "../../../lib/types";
+import { dataStatusCopy } from "../../../lib/freshness";
 import { toneStyles } from "../constants";
 
 export function DetailPanel({ county }: { county: CountyRisk }) {
@@ -21,13 +22,14 @@ export function DetailPanel({ county }: { county: CountyRisk }) {
         <RiskPill level={county.overallLevel} />
       </div>
 
+      <p className="mt-3 text-sm font-bold text-ink-700">{dataStatusCopy[county.dataStatus]}</p>
       <div className="mt-5 overflow-hidden rounded-2xl border border-white bg-gradient-to-br from-sun-100 via-white to-reef-100 p-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <MetricBlock
             icon={Sun}
             label="紫外線指數"
             value={formatInteger(county.uvIndex)}
-            unit={county.uvSource === "dailyMax" ? "日最大" : "目前"}
+            unit={county.uvSource === "dailyMax" ? "日最大（非即時）" : county.dataMode === "demo" ? "範例" : county.uvSource === "current" ? "觀測" : "缺資料"}
             level={county.uvLevel.label}
           />
           <MetricBlock
@@ -49,13 +51,13 @@ export function DetailPanel({ county }: { county: CountyRisk }) {
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <DetailItem label="觀測溫度" value={`${formatNumber(county.observedTemperature)} °C`} />
         <DetailItem label="相對濕度" value={`${formatInteger(county.humidity)} %`} />
-        <DetailItem label="36小時最高溫" value={`${formatNumber(county.forecastMaxTemperature)} °C`} />
-        <DetailItem label="測站數" value={`${county.stationCount} 站`} />
-        <DetailItem label="資料品質" value={dataQuality.label} helper={dataQuality.body} />
+        <DetailItem label="36小時預報最高溫" value={`${formatNumber(county.forecastMaxTemperature)} °C`} helper={county.forecastMaxTemperature !== undefined && county.dataMode === "live" ? `${formatTime(county.forecastStartTime)}–${formatTime(county.forecastEndTime)}（台灣時間）` : undefined} />
+        <DetailItem label={county.dataMode === "demo" ? "範例測站數" : "時效內測站數"} value={`${county.stationCount} 站`} />
+        <DetailItem label="可用指標欄位" value={dataQuality.label} helper={dataQuality.body} />
         <DetailItem
           label="UV 來源"
           value={uvSourceCopy[county.uvSource]}
-          helper={county.uvSource === "missing" ? "缺少 UV 欄位時不會被視為低風險。" : undefined}
+          helper={county.uvSource === "missing" ? "缺少 UV 欄位時不會被視為低風險。" : county.dataMode === "demo" ? "非官方觀測，沒有實際時間。" : `${formatTime(county.uvObservedAt)}（台灣時間）`}
         />
       </div>
 
@@ -77,7 +79,7 @@ export function DetailPanel({ county }: { county: CountyRisk }) {
       </div>
 
       <p className="mt-4 text-xs font-semibold text-ink-500">
-        更新：{formatTime(county.observedAt)} · {county.forecastWeather ?? "天氣描述暫缺"}
+        {county.dataMode === "demo" ? "人工範例・無觀測時間" : `熱指標觀測：${formatTime(county.heatObservedAt)}（台灣時間）`} · 預報：{county.forecastWeather ?? "天氣描述暫缺"}
       </p>
     </section>
   );
@@ -113,12 +115,12 @@ function MetricBlock({
 
 const dataQualityCopy: Record<CountyRisk["dataQuality"], { label: string; body: string }> = {
   complete: {
-    label: "完整",
-    body: "UV 與高溫欄位皆可用",
+    label: "兩類皆有",
+    body: "有 UV 與高溫數值；不代表觀測齊全或即時，請依上方資料狀態判讀。",
   },
   partial: {
     label: "部分",
-    body: "仍可判讀，但缺少部分 UV 或高溫欄位",
+    body: "缺少部分 UV 或高溫欄位，不能據此確認低風險",
   },
   missing: {
     label: "不足",
@@ -127,8 +129,8 @@ const dataQualityCopy: Record<CountyRisk["dataQuality"], { label: string; body: 
 };
 
 const uvSourceCopy: Record<CountyRisk["uvSource"], string> = {
-  current: "即時觀測",
-  dailyMax: "日最大備援",
+  current: "45 分鐘內觀測",
+  dailyMax: "當日日最大值（非即時）",
   demo: "示範資料",
   missing: "缺少資料",
 };

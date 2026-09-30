@@ -59,7 +59,8 @@ export function DashboardPage({ data, refreshing, onRefresh }: DashboardPageProp
 
         <div className="mt-6">
           <RankingPanel
-            counties={data.counties.slice(0, 8)}
+            counties={data.counties.filter((county) => county.overallScore >= 0).slice(0, 8)}
+            demo={data.stats.dataMode === "demo"}
             onSelect={setSelectedCounty}
             selectedCounty={selected?.county}
           />
@@ -133,8 +134,8 @@ const sortCounties = (counties: CountyRisk[], sort: SortKey) =>
       );
     }
     if (sort === "safe") {
-      const safeScoreA = a.overallScore < 0 ? Number.POSITIVE_INFINITY : a.overallScore;
-      const safeScoreB = b.overallScore < 0 ? Number.POSITIVE_INFINITY : b.overallScore;
+      const safeScoreA = a.overallScore < 0 || (a.dataStatus !== "current" && a.dataStatus !== "demo") ? Number.POSITIVE_INFINITY : a.overallScore;
+      const safeScoreB = b.overallScore < 0 || (b.dataStatus !== "current" && b.dataStatus !== "demo") ? Number.POSITIVE_INFINITY : b.overallScore;
       return safeScoreA - safeScoreB;
     }
     return b.overallScore - a.overallScore;

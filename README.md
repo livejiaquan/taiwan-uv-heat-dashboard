@@ -38,13 +38,13 @@ CWA Open Data API 需要會員授權碼。沒有 `VITE_CWA_API_KEY` 時，介面
 - UV：`0-2` 低、`3-5` 中等、`6-7` 高、`8-10` 非常高、`11+` 極端。
 - 高溫：以觀測氣溫、相對濕度估算熱指數，再與 36 小時最高溫比較，取較高風險。
 - 總風險：取 UV 與高溫兩者較高等級，並加入數值排序權重。
-- 資料新鮮度：即時模式下最新觀測超過 45 分鐘會標示 stale。
+- 資料可信度：逐筆排除超過 45 分鐘、時間不明或異常未來的觀測；示範資料沒有觀測時間，日最大 UV 與預報不視為即時觀測。
 
 ## Features
 
 - 台灣全域 UV / 高溫總覽
-- 縣市風險卡、區域篩選、危險/安全排序
-- 最危險與相對安全排行
+- 縣市風險卡、區域篩選、風險高低排序
+- 已知高風險排行與嚴格限制的低風險清單（示範／過期／缺資料不推薦）
 - 選取縣市詳細資訊與戶外活動建議
 - loading / error / empty / degraded / stale data states
 - desktop 與 mobile responsive layout
@@ -71,6 +71,7 @@ Local URL is printed by Vite, usually `http://localhost:5173`.
 npm ci
 npm run lint
 npm run typecheck
+npm test
 npm run build
 ```
 

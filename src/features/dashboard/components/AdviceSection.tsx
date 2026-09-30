@@ -1,5 +1,6 @@
 import { Activity, ArrowDown, ArrowUp, Sparkles } from "lucide-react";
 import { formatInteger } from "../../../lib/format";
+import { lowRiskCounties } from "../../../lib/freshness";
 import type { CountyRisk } from "../../../lib/types";
 
 interface AdviceSectionProps {
@@ -8,16 +9,19 @@ interface AdviceSectionProps {
 }
 
 export function AdviceSection({ counties, selected }: AdviceSectionProps) {
-  const safest = [...counties].sort((a, b) => a.overallScore - b.overallScore).slice(0, 3);
-  const danger = counties.slice(0, 3);
+  const safest = lowRiskCounties(counties).slice(0, 3);
+  const danger = counties.filter((county) => county.overallScore >= 0).slice(0, 3);
+  const demo = counties[0]?.dataMode === "demo";
 
   return (
     <section className="mt-8 grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
       <div className="rounded-2xl border border-white/75 bg-white/80 p-5 shadow-card backdrop-blur">
         <div className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-reef-700" />
-          <h2 className="text-2xl font-black text-ink-900">相對安全排行</h2>
+          <h2 className="text-2xl font-black text-ink-900">低風險縣市</h2>
         </div>
+        <p className="mt-2 text-sm leading-6 text-ink-500">僅列出 UV、氣溫與濕度觀測齊全且兩項風險皆低的縣市；仍須查看官方警報。</p>
+        {!safest.length ? <p className="mt-4 text-sm font-bold text-ink-700">{demo ? "示範模式不提供低風險推薦。" : "目前沒有符合條件的縣市，請勿將缺資料視為低風險。"}</p> : null}
         <div className="mt-4 grid gap-3">
           {safest.map((county) => (
             <div
@@ -39,7 +43,7 @@ export function AdviceSection({ counties, selected }: AdviceSectionProps) {
       <div className="rounded-2xl border border-white/75 bg-white/80 p-5 shadow-card backdrop-blur">
         <div className="flex items-center gap-2">
           <Activity className="h-5 w-5 text-heat-700" />
-          <h2 className="text-2xl font-black text-ink-900">今日提醒</h2>
+          <h2 className="text-2xl font-black text-ink-900">{demo ? "示範閱讀提醒" : "資料與防護提醒"}</h2>
         </div>
         <div className="mt-4 grid gap-3 md:grid-cols-3">
           {danger.map((county) => (

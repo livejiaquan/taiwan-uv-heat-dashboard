@@ -1,3 +1,5 @@
+import { sourceTimestamp } from "./freshness";
+
 export const formatNumber = (value?: number, digits = 1): string =>
   value === undefined || !Number.isFinite(value) ? "--" : value.toFixed(digits);
 
@@ -6,9 +8,14 @@ export const formatInteger = (value?: number): string =>
 
 export const formatTime = (iso?: string): string => {
   if (!iso) return "--";
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso;
+  const timestamp = sourceTimestamp(iso, true);
+  if (timestamp === undefined) return "時間不明";
+  const date = new Date(timestamp);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
+    return new Intl.DateTimeFormat("zh-TW", { timeZone: "Asia/Taipei", month: "2-digit", day: "2-digit" }).format(date);
+  }
   return new Intl.DateTimeFormat("zh-TW", {
+    timeZone: "Asia/Taipei",
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
@@ -19,7 +26,9 @@ export const formatTime = (iso?: string): string => {
 
 export const formatRelativeAge = (iso?: string): string => {
   if (!iso) return "未知";
-  const minutes = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+  const timestamp = sourceTimestamp(iso);
+  if (timestamp === undefined || timestamp > Date.now()) return "時間待確認";
+  const minutes = Math.floor((Date.now() - timestamp) / 60000);
   if (minutes < 1) return "剛剛";
   if (minutes < 60) return `${minutes} 分鐘前`;
   const hours = Math.round(minutes / 60);

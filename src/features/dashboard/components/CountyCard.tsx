@@ -2,6 +2,7 @@ import { Clock3, RadioTower, Sun, ThermometerSun } from "lucide-react";
 import { RiskPill } from "../../../components/RiskPill";
 import { formatInteger, formatNumber, formatRelativeAge } from "../../../lib/format";
 import type { CountyRisk } from "../../../lib/types";
+import { dataStatusCopy } from "../../../lib/freshness";
 import { toneStyles } from "../constants";
 
 interface CountyCardProps {
@@ -39,14 +40,14 @@ export function CountyCard({ county, active, onSelect }: CountyCardProps) {
         <span className="mini-metric">
           <Sun className="h-4 w-4 text-sun-600" aria-hidden="true" />
           <span>
-            <span className="block text-xs font-bold text-ink-500">UV</span>
+            <span className="block text-xs font-bold text-ink-500">{county.uvSource === "dailyMax" ? "UV（日最大）" : "UV"}</span>
             <span className="text-base font-black text-ink-900">{formatInteger(county.uvIndex)}</span>
           </span>
         </span>
         <span className="mini-metric">
           <ThermometerSun className="h-4 w-4 text-heat-700" aria-hidden="true" />
           <span>
-            <span className="block text-xs font-bold text-ink-500">熱感</span>
+            <span className="block text-xs font-bold text-ink-500">熱指數 / 預報</span>
             <span className="text-base font-black text-ink-900">{formatNumber(heatValue)}°</span>
           </span>
         </span>
@@ -65,20 +66,14 @@ export function CountyCard({ county, active, onSelect }: CountyCardProps) {
       <span className="mt-3 flex flex-wrap gap-1.5">
         <span className="info-chip">
           <RadioTower className="h-3.5 w-3.5" aria-hidden="true" />
-          {county.stationCount ? `${county.stationCount} 測站` : "測站暫缺"}
+          {county.dataMode === "demo" ? "範例測站" : county.stationCount ? `${county.stationCount} 時效內測站` : "時效內測站暫缺"}
         </span>
-        <span className="info-chip">{dataQualityCopy[county.dataQuality]}</span>
+        <span className="info-chip">{dataStatusCopy[county.dataStatus]}</span>
         <span className="info-chip">
           <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
-          {formatRelativeAge(county.observedAt)}
+          {county.dataMode === "demo" ? "無觀測時間" : formatRelativeAge(county.observedAt)}
         </span>
       </span>
     </button>
   );
 }
-
-const dataQualityCopy: Record<CountyRisk["dataQuality"], string> = {
-  complete: "資料完整",
-  partial: "部分資料",
-  missing: "資料不足",
-};

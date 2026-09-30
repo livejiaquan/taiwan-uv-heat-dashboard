@@ -55,6 +55,12 @@ export interface CountyRisk {
   lat: number;
   lon: number;
   observedAt?: string;
+  dataMode: DataMode;
+  dataStatus: "demo" | "current" | "limited" | "stale" | "missing";
+  uvObservedAt?: string;
+  heatObservedAt?: string;
+  forecastStartTime?: string;
+  forecastEndTime?: string;
   stationCount: number;
   uvIndex?: number;
   uvSource: "current" | "dailyMax" | "demo" | "missing";
@@ -81,11 +87,12 @@ export interface DashboardStats {
   totalCounties: number;
   dangerousCounties: number;
   missingDataCount: number;
-  stale: boolean;
+  currentCountyCount: number;
+  hasLimitedCoverage: boolean;
   latestUpdate?: string;
   highestUv?: CountyRisk;
   highestHeat?: CountyRisk;
-  safest?: CountyRisk;
+  lowestRisk?: CountyRisk;
   dataMode: DataMode;
   sourceSummary: string;
   errors: string[];

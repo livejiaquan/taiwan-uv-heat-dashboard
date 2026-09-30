@@ -1,8 +1,7 @@
 import type { CountyForecast, StationObservation } from "../lib/types";
 
-const baseDate = new Date(Date.now() - 12 * 60 * 1000).toISOString();
-const forecastStart = new Date(Date.now() - 30 * 60 * 1000).toISOString();
-const forecastEnd = new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString();
+// Synthetic values intentionally have no observation or forecast timestamp.
+// Reloading the demo must never make it look like fresh official data.
 
 const rows = [
   ["臺北市", "中正區", "臺北", 33.2, 62, 8, 35, "多雲午後短暫雷陣雨"],
@@ -45,7 +44,6 @@ export const demoObservations: StationObservation[] = demoRows.map((row, index) 
   stationName: row.station,
   county: row.county,
   town: row.town,
-  observedAt: baseDate,
   temperature: row.temp,
   humidity: row.humidity,
   uvIndex: row.uv,
@@ -55,6 +53,4 @@ export const demoForecasts: CountyForecast[] = demoRows.map((row) => ({
   county: row.county,
   maxTemperature: row.forecast,
   weather: row.weather,
-  startTime: forecastStart,
-  endTime: forecastEnd,
 }));
