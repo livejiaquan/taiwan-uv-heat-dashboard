@@ -31,8 +31,8 @@ The parser normalizes county names, including `台` and `臺` variants, then gro
 For each county:
 
 - highest observed UV is preferred;
-- daily maximum UV is used as fallback;
-- hottest observation and humidity produce an estimated heat index;
+- daily maximum UV is used as fallback. `O-A0005-001` rows only carry `StationID` and `UVIndex` (the date sits on `weatherElement.Date`), so the county is resolved through the `StationId` → `GeoInfo.CountyName` mapping from `O-A0003-001`. If the observation dataset fails, daily UV cannot be placed in a county and is reported as unusable;
+- the station with the highest NWS heat index (temperature and humidity from the same station) provides the county heat index;
 - forecast max temperature is compared against heat index;
 - the higher of UV risk and heat risk becomes the overall risk.
 

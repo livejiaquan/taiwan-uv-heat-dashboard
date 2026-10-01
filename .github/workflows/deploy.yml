@@ -37,6 +37,9 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          # Optional repository secret; when unset the site builds in demo mode.
+          VITE_CWA_API_KEY: ${{ secrets.VITE_CWA_API_KEY }}
 
       - name: Configure Pages
         uses: actions/configure-pages@v6
