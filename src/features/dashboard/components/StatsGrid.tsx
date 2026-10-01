@@ -1,14 +1,12 @@
 import { AlertTriangle, ShieldCheck, Sun, ThermometerSun } from "lucide-react";
 import { StatCard } from "../../../components/StatCard";
 import { formatInteger, formatNumber } from "../../../lib/format";
+import { peakHeat } from "../../../lib/risk";
 import type { DashboardData } from "../../../lib/types";
 
 export function StatsGrid({ data }: { data: DashboardData }) {
   const highestHeat = data.stats.highestHeat
-    ? Math.max(
-        data.stats.highestHeat.heatIndex ?? -Infinity,
-        data.stats.highestHeat.forecastMaxTemperature ?? -Infinity,
-      )
+    ? peakHeat(data.stats.highestHeat)
     : undefined;
 
   return (
@@ -23,7 +21,7 @@ export function StatsGrid({ data }: { data: DashboardData }) {
       <StatCard
         icon={ThermometerSun}
         tone="heat"
-        label="最高熱指數"
+        label="最高熱指數 / 高溫"
         value={formatNumber(highestHeat)}
         unit="°C"
         caption={data.stats.highestHeat ? `${data.stats.highestHeat.county} 體感最熱` : "暫無熱風險資料"}

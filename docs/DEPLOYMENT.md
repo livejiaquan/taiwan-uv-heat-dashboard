@@ -29,7 +29,7 @@ The workflow:
 
 Leave `VITE_CWA_API_KEY` unset if demo mode is acceptable for public portfolio browsing.
 
-If live data is required on GitHub Pages, configure the build with `VITE_CWA_API_KEY`. Remember that the key is visible to browsers in a static frontend.
+If live data is required on GitHub Pages, add a repository secret named `VITE_CWA_API_KEY` (Settings → Secrets and variables → Actions); the deploy workflow passes it to the build step. Remember that the key is visible to browsers in a static frontend.
 
 ## Vercel / Netlify
 

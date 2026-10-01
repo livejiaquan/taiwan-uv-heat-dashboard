@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import { MapPin, Sun, ThermometerSun } from "lucide-react";
 import { RiskPill } from "../../../components/RiskPill";
 import { formatInteger, formatNumber, formatTime } from "../../../lib/format";
+import { peakHeat } from "../../../lib/risk";
 import type { CountyRisk } from "../../../lib/types";
 import { toneStyles } from "../constants";
 
@@ -27,19 +28,13 @@ export function DetailPanel({ county }: { county: CountyRisk }) {
             icon={Sun}
             label="紫外線指數"
             value={formatInteger(county.uvIndex)}
-            unit={county.uvSource === "dailyMax" ? "日最大" : "目前"}
+            unit={uvUnitCopy[county.uvSource]}
             level={county.uvLevel.label}
           />
           <MetricBlock
             icon={ThermometerSun}
             label="熱指數 / 高溫"
-            value={formatNumber(
-              Math.max(
-                county.heatIndex ?? -Infinity,
-                county.forecastMaxTemperature ?? -Infinity,
-                county.observedTemperature ?? -Infinity,
-              ),
-            )}
+            value={formatNumber(peakHeat(county))}
             unit="°C"
             level={county.heatLevel.label}
           />
@@ -124,6 +119,13 @@ const dataQualityCopy: Record<CountyRisk["dataQuality"], { label: string; body: 
     label: "不足",
     body: "目前沒有足夠欄位支撐風險判讀",
   },
+};
+
+const uvUnitCopy: Record<CountyRisk["uvSource"], string> = {
+  current: "目前",
+  dailyMax: "日最大",
+  demo: "示範",
+  missing: "",
 };
 
 const uvSourceCopy: Record<CountyRisk["uvSource"], string> = {

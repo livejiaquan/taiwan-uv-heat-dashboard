@@ -1,6 +1,7 @@
 import { Clock3, RadioTower, Sun, ThermometerSun } from "lucide-react";
 import { RiskPill } from "../../../components/RiskPill";
 import { formatInteger, formatNumber, formatRelativeAge } from "../../../lib/format";
+import { peakHeat, riskBarPercent } from "../../../lib/risk";
 import type { CountyRisk } from "../../../lib/types";
 import { toneStyles } from "../constants";
 
@@ -11,11 +12,7 @@ interface CountyCardProps {
 }
 
 export function CountyCard({ county, active, onSelect }: CountyCardProps) {
-  const heatValue = Math.max(
-    county.heatIndex ?? -Infinity,
-    county.forecastMaxTemperature ?? -Infinity,
-    county.observedTemperature ?? -Infinity,
-  );
+  const heatValue = peakHeat(county);
 
   return (
     <button
@@ -58,7 +55,7 @@ export function CountyCard({ county, active, onSelect }: CountyCardProps) {
       >
         <span
           className={`block h-full rounded-full bg-gradient-to-r ${toneStyles[county.overallLevel.tone]}`}
-          style={{ width: `${Math.min(100, Math.max(10, county.overallScore / 1.8))}%` }}
+          style={{ width: `${riskBarPercent(county.overallScore)}%` }}
         />
       </span>
 

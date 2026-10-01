@@ -5,6 +5,7 @@ import {
   heatIndexCelsius,
   heatRiskLevel,
   overallRiskLevel,
+  peakHeat,
   uvRiskLevel,
 } from "./risk";
 import type {
@@ -18,11 +19,15 @@ import type {
 
 const CWA_BASE = "https://opendata.cwa.gov.tw/api/v1/rest/datastore";
 const CWA_REQUEST_TIMEOUT_MS = 10_000;
+export const STALE_AFTER_MINUTES = 45;
 const SOURCE_CLOCK_SKEW_MS = 5 * 60 * 1000;
 
 const toNumber = (value: unknown): number | undefined => {
-  if (value === null || value === undefined) return undefined;
-  const parsed = Number(String(value).trim());
+  if (typeof value !== "number" && typeof value !== "string") return undefined;
+  const text = String(value).trim();
+  // Number("") is 0, which would turn a blank CWA field into a real reading.
+  if (!text) return undefined;
+  const parsed = Number(text);
   if (!Number.isFinite(parsed) || parsed <= -90) return undefined;
   return parsed;
 };
@@ -61,6 +66,10 @@ const findElementValue = (
 
   return undefined;
 };
+
+// O-A0005-001 publishes a bare yyyy-MM-dd; anchor it to Taiwan time instead of UTC.
+const toTaipeiDate = (value?: string): string | undefined =>
+  value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T00:00:00+08:00` : value;
 
 const latestIso = (dates: Array<string | undefined>): string | undefined =>
   dates
@@ -146,7 +155,10 @@ export const loadCwaBundle = async (apiKey?: string): Promise<{
   } else errors.push(`10分鐘觀測資料讀取失敗：${observations.reason}`);
 
   if (dailyUv.status === "fulfilled") {
-    const hasRiskValue = parseDailyUvPayload(dailyUv.value).some(
+    const hasRiskValue = parseDailyUvPayload(
+      dailyUv.value,
+      stationCountyMap(bundle.observations),
+    ).some(
       (item) => item.uvIndex !== undefined,
     );
     if (hasRiskValue) {
@@ -234,41 +246,55 @@ export const parseObservationPayload = (payload: unknown): StationObservation[] 
     .filter((item): item is StationObservation => Boolean(item));
 };
 
-export const parseDailyUvPayload = (payload: unknown): StationObservation[] => {
+// O-A0005-001 locations only carry StationID + UVIndex, so the county has to be
+// looked up from the O-A0003-001 station metadata.
+export const stationCountyMap = (observationPayload: unknown): Map<string, string> =>
+  new Map(
+    parseObservationPayload(observationPayload)
+      .filter((item) => item.stationId !== "unknown")
+      .map((item) => [item.stationId, item.county]),
+  );
+
+export const parseDailyUvPayload = (
+  payload: unknown,
+  stationCounties: Map<string, string> = new Map(),
+): StationObservation[] => {
   const records = asRecord(asRecord(payload).records);
-  const weatherElement = records.weatherElement ?? records.WeatherElement;
+  const weatherElement = asRecord(records.weatherElement ?? records.WeatherElement);
+  const date = toText(weatherElement.Date) ?? toText(weatherElement.date);
   const locations = asArray(
-    asRecord(weatherElement).location ??
-      asRecord(weatherElement).Location ??
-      records.location,
+    weatherElement.location ?? weatherElement.Location ?? records.location,
   );
 
   return locations
     .map((location): StationObservation | undefined => {
       const record = asRecord(location);
-      const county = normalizeCountyName(
-        toText(record.CountyName) ??
-          toText(record.countyName) ??
-          toText(record.parameterName),
-      );
+      const stationId =
+        toText(record.StationID) ??
+        toText(record.StationId) ??
+        toText(record.stationId);
+      const county =
+        normalizeCountyName(
+          toText(record.CountyName) ??
+            toText(record.countyName) ??
+            toText(record.parameterName),
+        ) ?? (stationId ? stationCounties.get(stationId) : undefined);
       if (!county) return undefined;
 
       return {
-        stationId:
-          toText(record.StationID) ??
-          toText(record.StationId) ??
-          toText(record.stationId) ??
-          "daily-uv",
+        stationId: stationId ?? "daily-uv",
         stationName:
           toText(record.StationName) ??
           toText(record.stationName) ??
           toText(record.locationName) ??
           county,
         county,
-        observedAt:
+        observedAt: toTaipeiDate(
           toText(record.Date) ??
-          toText(record.DateTime) ??
-          toText(record.time),
+            toText(record.DateTime) ??
+            toText(record.time) ??
+            date,
+        ),
         uvIndex:
           toNumber(record.UVIndex) ??
           toNumber(record.UVI) ??
@@ -325,6 +351,13 @@ export const parseForecastPayload = (payload: unknown): CountyForecast[] => {
     .filter((item): item is CountyForecast => Boolean(item));
 };
 
+export const isStale = (mode: DataMode, latestUpdate?: string): boolean => {
+  if (mode !== "live") return false;
+  if (!latestUpdate) return true;
+  const ageMinutes = (Date.now() - new Date(latestUpdate).getTime()) / 60000;
+  return ageMinutes > STALE_AFTER_MINUTES;
+};
+
 const pickMax = <T>(
   values: T[],
   selector: (item: T) => number | undefined,
@@ -341,7 +374,9 @@ export const buildDashboardData = (
   const observations =
     mode === "demo" ? demoObservations : parseObservationPayload(bundle?.observations);
   const dailyUv =
-    mode === "demo" ? [] : parseDailyUvPayload(bundle?.dailyUv);
+    mode === "demo"
+      ? []
+      : parseDailyUvPayload(bundle?.dailyUv, stationCountyMap(bundle?.observations));
   const forecasts =
     mode === "demo" ? demoForecasts : parseForecastPayload(bundle?.forecast);
   const forecastByCounty = new Map(forecasts.map((item) => [item.county, item]));
@@ -358,10 +393,16 @@ export const buildDashboardData = (
     const currentUv = pickMax(countyObservations, (item) => item.uvIndex);
     const dailyMaxUv = pickMax(countyDailyUv, (item) => item.uvIndex);
     const forecast = forecastByCounty.get(meta.county);
+    // Keep temperature and humidity from the same station so the heat index is real.
     const heatIndex = heatIndexCelsius(
-      mostHumidHeat?.temperature ?? hottest?.temperature,
-      mostHumidHeat?.humidity ?? hottest?.humidity,
+      mostHumidHeat?.temperature,
+      mostHumidHeat?.humidity,
     );
+    const heatPeak = peakHeat({
+      heatIndex,
+      forecastMaxTemperature: forecast?.maxTemperature,
+      observedTemperature: hottest?.temperature,
+    });
     const uvIndex = currentUv?.uvIndex ?? dailyMaxUv?.uvIndex;
     const uvSource =
       mode === "demo"
@@ -372,13 +413,10 @@ export const buildDashboardData = (
             ? "dailyMax"
             : "missing";
     const uvLevel = uvRiskLevel(uvIndex);
-    const heatLevel = heatRiskLevel(heatIndex, forecast?.maxTemperature);
+    const heatLevel = heatRiskLevel(heatPeak);
     const overallLevel = overallRiskLevel(uvLevel, heatLevel);
     const hasUvData = uvIndex !== undefined;
-    const hasHeatData =
-      heatIndex !== undefined ||
-      forecast?.maxTemperature !== undefined ||
-      hottest?.temperature !== undefined;
+    const hasHeatData = heatPeak !== undefined;
     const dataQuality =
       hasUvData && hasHeatData
         ? "complete"
@@ -397,7 +435,7 @@ export const buildDashboardData = (
       uvIndex,
       uvSource,
       observedTemperature: hottest?.temperature,
-      humidity: mostHumidHeat?.humidity ?? hottest?.humidity,
+      humidity: mostHumidHeat?.humidity,
       heatIndex,
       forecastMaxTemperature: forecast?.maxTemperature,
       forecastWeather: forecast?.weather,
@@ -410,7 +448,7 @@ export const buildDashboardData = (
           ? -1
           : overallLevel.score * 100 +
             (uvIndex ?? 0) * 4 +
-            Math.max(heatIndex ?? 0, forecast?.maxTemperature ?? 0),
+            Math.max(0, heatPeak ?? 0),
       advice: [],
     };
     return { ...risk, advice: buildAdvice(risk) };
@@ -418,17 +456,8 @@ export const buildDashboardData = (
 
   const sorted = [...countyRisks].sort((a, b) => b.overallScore - a.overallScore);
   const latestUpdate = latestIso(countyRisks.map((item) => item.observedAt));
-  const latestAgeMinutes = latestUpdate
-    ? (Date.now() - new Date(latestUpdate).getTime()) / 60000
-    : Infinity;
   const highestUv = pickMax(countyRisks, (item) => item.uvIndex);
-  const highestHeat = pickMax(countyRisks, (item) =>
-    Math.max(
-      item.heatIndex ?? -Infinity,
-      item.forecastMaxTemperature ?? -Infinity,
-      item.observedTemperature ?? -Infinity,
-    ),
-  );
+  const highestHeat = pickMax(countyRisks, peakHeat);
   const knownRiskCounties = countyRisks.filter((item) => item.overallScore >= 0);
 
   return {
@@ -439,7 +468,7 @@ export const buildDashboardData = (
         .length,
       missingDataCount: countyRisks.filter((item) => item.dataQuality === "missing")
         .length,
-      stale: mode === "live" ? latestAgeMinutes > 45 : false,
+      stale: isStale(mode, latestUpdate),
       latestUpdate,
       highestUv,
       highestHeat,

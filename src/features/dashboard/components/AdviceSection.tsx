@@ -8,8 +8,10 @@ interface AdviceSectionProps {
 }
 
 export function AdviceSection({ counties, selected }: AdviceSectionProps) {
-  const safest = [...counties].sort((a, b) => a.overallScore - b.overallScore).slice(0, 3);
-  const danger = counties.slice(0, 3);
+  // Counties without data score -1; they must never be listed as "safe".
+  const known = counties.filter((county) => county.overallScore >= 0);
+  const safest = [...known].sort((a, b) => a.overallScore - b.overallScore).slice(0, 3);
+  const danger = known.slice(0, 3);
 
   return (
     <section className="mt-8 grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
@@ -19,6 +21,9 @@ export function AdviceSection({ counties, selected }: AdviceSectionProps) {
           <h2 className="text-2xl font-black text-ink-900">相對安全排行</h2>
         </div>
         <div className="mt-4 grid gap-3">
+          {safest.length ? null : (
+            <p className="text-sm leading-6 text-ink-500">目前沒有足夠資料判斷哪些縣市相對安全。</p>
+          )}
           {safest.map((county) => (
             <div
               key={county.county}

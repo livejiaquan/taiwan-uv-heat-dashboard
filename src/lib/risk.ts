@@ -82,27 +82,56 @@ export const overallRiskLevel = (uv: RiskLevel, heat: RiskLevel): RiskLevel => {
   return level(riskOrder[Math.max(uv.score, heat.score)]);
 };
 
+// NWS heat index: Steadman's simple formula first, then the Rothfusz regression
+// with its low/high humidity adjustments once the result reaches 80°F.
+// https://www.wpc.ncep.noaa.gov/html/heatindex_equation.shtml
 export const heatIndexCelsius = (
   temperature?: number,
   humidity?: number,
 ): number | undefined => {
   if (temperature === undefined || humidity === undefined) return temperature;
-  if (temperature < 27 || humidity < 40) return temperature;
 
   const tempF = (temperature * 9) / 5 + 32;
-  const rh = humidity;
-  const hiF =
-    -42.379 +
-    2.04901523 * tempF +
-    10.14333127 * rh -
-    0.22475541 * tempF * rh -
-    0.00683783 * tempF * tempF -
-    0.05481717 * rh * rh +
-    0.00122874 * tempF * tempF * rh +
-    0.00085282 * tempF * rh * rh -
-    0.00000199 * tempF * tempF * rh * rh;
+  const rh = Math.min(100, Math.max(0, humidity));
+  const simpleF = 0.5 * (tempF + 61 + (tempF - 68) * 1.2 + rh * 0.094);
+  let hiF = simpleF;
+
+  if ((simpleF + tempF) / 2 >= 80) {
+    hiF =
+      -42.379 +
+      2.04901523 * tempF +
+      10.14333127 * rh -
+      0.22475541 * tempF * rh -
+      0.00683783 * tempF * tempF -
+      0.05481717 * rh * rh +
+      0.00122874 * tempF * tempF * rh +
+      0.00085282 * tempF * rh * rh -
+      0.00000199 * tempF * tempF * rh * rh;
+
+    if (rh < 13 && tempF >= 80 && tempF <= 112) {
+      hiF -= ((13 - rh) / 4) * Math.sqrt((17 - Math.abs(tempF - 95)) / 17);
+    } else if (rh > 85 && tempF >= 80 && tempF <= 87) {
+      hiF += ((rh - 85) / 10) * ((87 - tempF) / 5);
+    }
+  }
 
   return Number((((hiF - 32) * 5) / 9).toFixed(1));
+};
+
+/** Width of a risk bar; overallScore tops out around 500 (extreme + UV 15 + 40°C). */
+export const riskBarPercent = (overallScore: number): number =>
+  overallScore < 0 ? 0 : Math.min(100, Math.max(6, overallScore / 5));
+
+/** Highest heat signal for a county: heat index, forecast max, or observed temperature. */
+export const peakHeat = (
+  county: Pick<CountyRisk, "heatIndex" | "forecastMaxTemperature" | "observedTemperature">,
+): number | undefined => {
+  const values = [
+    county.heatIndex,
+    county.forecastMaxTemperature,
+    county.observedTemperature,
+  ].filter((value): value is number => value !== undefined && Number.isFinite(value));
+  return values.length ? Math.max(...values) : undefined;
 };
 
 export const buildAdvice = (county: CountyRisk): AdviceItem[] => {

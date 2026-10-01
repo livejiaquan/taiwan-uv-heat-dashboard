@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { EmptyState } from "../../components/EmptyState";
+import { peakHeat } from "../../lib/risk";
 import type { CountyRisk, DashboardData } from "../../lib/types";
 import { AdviceSection } from "./components/AdviceSection";
 import { CountyCard } from "./components/CountyCard";
@@ -59,7 +60,7 @@ export function DashboardPage({ data, refreshing, onRefresh }: DashboardPageProp
 
         <div className="mt-6">
           <RankingPanel
-            counties={data.counties.slice(0, 8)}
+            counties={data.counties.filter((item) => item.overallScore >= 0).slice(0, 8)}
             onSelect={setSelectedCounty}
             selectedCounty={selected?.county}
           />
@@ -125,17 +126,21 @@ const filterCounties = (counties: CountyRisk[], region: RegionFilter) =>
 
 const sortCounties = (counties: CountyRisk[], sort: SortKey) =>
   [...counties].sort((a, b) => {
-    if (sort === "uv") return (b.uvIndex ?? -1) - (a.uvIndex ?? -1);
-    if (sort === "heat") {
-      return (
-        Math.max(b.heatIndex ?? -1, b.forecastMaxTemperature ?? -1) -
-        Math.max(a.heatIndex ?? -1, a.forecastMaxTemperature ?? -1)
-      );
-    }
+    if (sort === "uv") return compareMissingLast(a.uvIndex, b.uvIndex, "desc");
+    if (sort === "heat") return compareMissingLast(peakHeat(a), peakHeat(b), "desc");
     if (sort === "safe") {
-      const safeScoreA = a.overallScore < 0 ? Number.POSITIVE_INFINITY : a.overallScore;
-      const safeScoreB = b.overallScore < 0 ? Number.POSITIVE_INFINITY : b.overallScore;
-      return safeScoreA - safeScoreB;
+      return compareMissingLast(knownScore(a), knownScore(b), "asc");
     }
     return b.overallScore - a.overallScore;
   });
+
+const knownScore = (county: CountyRisk) =>
+  county.overallScore < 0 ? undefined : county.overallScore;
+
+// Counties without a value always sort last, whatever the direction.
+const compareMissingLast = (a?: number, b?: number, direction: "asc" | "desc" = "desc") => {
+  if (a === undefined && b === undefined) return 0;
+  if (a === undefined) return 1;
+  if (b === undefined) return -1;
+  return direction === "desc" ? b - a : a - b;
+};
