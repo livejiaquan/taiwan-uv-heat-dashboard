@@ -5,9 +5,19 @@ import {
   loadCwaBundle,
   parseDailyUvPayload,
   parseForecastPayload,
+  isStale,
   parseObservationPayload,
+  stationCountyMap,
 } from "./cwa";
-import { heatRiskLevel, overallRiskLevel, uvRiskLevel } from "./risk";
+import { formatRelativeAge, formatTime } from "./format";
+import {
+  heatIndexCelsius,
+  heatRiskLevel,
+  overallRiskLevel,
+  peakHeat,
+  riskBarPercent,
+  uvRiskLevel,
+} from "./risk";
 
 describe("risk levels", () => {
   it("does not classify missing UV data as low risk", () => {
@@ -245,5 +255,128 @@ describe("dashboard data quality", () => {
 
     expect(dashboard.stats.latestUpdate).toBeUndefined();
     expect(dashboard.stats.stale).toBe(true);
+  });
+});
+
+describe("heat index", () => {
+  it("matches the NWS table for hot, humid air", () => {
+    // NWS chart: 90°F at 70% RH ≈ 106°F (41.1°C).
+    expect(heatIndexCelsius(32.2, 70)).toBeCloseTo(41.1, 0);
+  });
+
+  it("applies the NWS high-humidity adjustment between 80°F and 87°F", () => {
+    // 82°F / 95% RH: the adjustment adds (95-85)/10 × (87-82)/5 ≈ 1°F (≈ 0.55°C)
+    // on top of the plain Rothfusz value (≈ 33.9°C).
+    expect(heatIndexCelsius(27.8, 95)).toBeCloseTo(34.5, 1);
+  });
+
+  it("stays close to air temperature in mild weather", () => {
+    const value = heatIndexCelsius(22, 60) ?? NaN;
+    expect(Math.abs(value - 22)).toBeLessThan(1);
+  });
+
+  it("falls back to air temperature without humidity", () => {
+    expect(heatIndexCelsius(33, undefined)).toBe(33);
+  });
+});
+
+describe("peak heat", () => {
+  it("returns undefined instead of a sentinel when every heat field is missing", () => {
+    expect(peakHeat({})).toBeUndefined();
+  });
+
+  it("takes the highest of heat index, forecast and observed temperature", () => {
+    expect(
+      peakHeat({ heatIndex: 33, forecastMaxTemperature: 35, observedTemperature: 34 }),
+    ).toBe(35);
+  });
+});
+
+describe("risk bar", () => {
+  it("keeps very-high and extreme counties visually distinct", () => {
+    const veryHigh = riskBarPercent(3 * 100 + 9 * 4 + 36);
+    const extreme = riskBarPercent(4 * 100 + 12 * 4 + 38);
+    expect(veryHigh).toBeLessThan(extreme);
+    expect(riskBarPercent(-1)).toBe(0);
+  });
+});
+
+describe("number parsing", () => {
+  it("treats blank CWA fields as missing instead of zero", () => {
+    const [observation] = parseObservationPayload({
+      records: {
+        Station: [
+          {
+            StationId: "TEST",
+            GeoInfo: { CountyName: "臺北市" },
+            WeatherElement: { AirTemperature: "31", UVIndex: "" },
+          },
+        ],
+      },
+    });
+
+    expect(observation.uvIndex).toBeUndefined();
+  });
+});
+
+describe("daily max UV (O-A0005-001)", () => {
+  const observations = {
+    records: {
+      Station: [
+        {
+          StationId: "466920",
+          StationName: "臺北",
+          GeoInfo: { CountyName: "臺北市" },
+          ObsTime: { DateTime: "2026-08-15T12:00:00+08:00" },
+          WeatherElement: { AirTemperature: "33" },
+        },
+      ],
+    },
+  };
+  const dailyUv = {
+    records: {
+      weatherElement: {
+        elementName: "每日紫外線指數最大值",
+        Date: "2026-08-15",
+        location: [{ StationID: "466920", UVIndex: 9.3 }],
+      },
+    },
+  };
+
+  it("maps station-only rows to a county through observation station metadata", () => {
+    const [record] = parseDailyUvPayload(dailyUv, stationCountyMap(observations));
+
+    expect(record.county).toBe("臺北市");
+    expect(record.uvIndex).toBe(9.3);
+    expect(record.observedAt).toBe("2026-08-15T00:00:00+08:00");
+  });
+
+  it("drops station-only rows when no station metadata is available", () => {
+    expect(parseDailyUvPayload(dailyUv)).toEqual([]);
+  });
+
+  it("uses daily max UV when the county has no current UV reading", () => {
+    const dashboard = buildDashboardData("live", [], { observations, dailyUv });
+    const taipei = dashboard.counties.find((county) => county.county === "臺北市");
+
+    expect(taipei?.uvIndex).toBe(9.3);
+    expect(taipei?.uvSource).toBe("dailyMax");
+  });
+});
+
+describe("staleness", () => {
+  it("treats live data without any usable timestamp as stale", () => {
+    expect(isStale("live", undefined)).toBe(true);
+    expect(isStale("demo", undefined)).toBe(false);
+  });
+});
+
+describe("formatting", () => {
+  it("does not render NaN for unparseable timestamps", () => {
+    expect(formatRelativeAge("not-a-date")).toBe("未知");
+  });
+
+  it("formats times in Taiwan time regardless of the browser time zone", () => {
+    expect(formatTime("2026-08-15T00:00:00Z")).toContain("08:00");
   });
 });

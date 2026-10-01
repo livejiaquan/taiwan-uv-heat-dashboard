@@ -1,6 +1,7 @@
 import { Flame } from "lucide-react";
 import { RiskPill } from "../../../components/RiskPill";
 import { formatInteger, formatNumber } from "../../../lib/format";
+import { peakHeat } from "../../../lib/risk";
 import type { CountyRisk } from "../../../lib/types";
 import { toneStyles } from "../constants";
 
@@ -51,7 +52,7 @@ export function RankingPanel({
             <span className="text-right text-sm font-bold text-ink-500">
               UV {formatInteger(county.uvIndex)}
               <br />
-              {formatNumber(Math.max(county.heatIndex ?? -1, county.forecastMaxTemperature ?? -1))}
+              {formatNumber(peakHeat(county))}
               °C
             </span>
           </button>
