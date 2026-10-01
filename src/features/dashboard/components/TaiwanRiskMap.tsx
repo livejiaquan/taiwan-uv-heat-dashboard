@@ -2,7 +2,9 @@ import L from "leaflet";
 import { useEffect, useMemo, useRef } from "react";
 import { MapPin } from "lucide-react";
 import { RiskPill } from "../../../components/RiskPill";
+import { counties as countyMeta } from "../../../data/counties";
 import { formatInteger, formatNumber } from "../../../lib/format";
+import { peakHeat } from "../../../lib/risk";
 import type { CountyRisk, RiskTone } from "../../../lib/types";
 
 interface TaiwanRiskMapProps {
@@ -11,8 +13,10 @@ interface TaiwanRiskMapProps {
   onSelect: (county: string) => void;
 }
 
-const TAIWAN_CENTER: L.LatLngExpression = [23.72, 120.95];
 const TAIWAN_BOUNDS = L.latLngBounds([21.65, 118.0], [26.45, 122.45]);
+// Initial view: every county marker, including Kinmen and Matsu.
+const COUNTY_BOUNDS = L.latLngBounds(countyMeta.map(({ lat, lon }) => [lat, lon]));
+const FIT_OPTIONS: L.FitBoundsOptions = { padding: [16, 16] };
 
 const markerColors: Record<RiskTone, { fill: string; stroke: string }> = {
   unknown: { fill: "#94a3b8", stroke: "#475569" },
@@ -43,7 +47,7 @@ export function TaiwanRiskMap({ counties, selectedCounty, onSelect }: TaiwanRisk
       minZoom: 6,
       scrollWheelZoom: false,
       zoomControl: true,
-    }).setView(TAIWAN_CENTER, 7);
+    }).fitBounds(COUNTY_BOUNDS, FIT_OPTIONS);
 
     L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
       attribution:
@@ -54,7 +58,10 @@ export function TaiwanRiskMap({ counties, selectedCounty, onSelect }: TaiwanRisk
     markerLayerRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
 
-    const resize = window.setTimeout(() => map.invalidateSize(), 80);
+    const resize = window.setTimeout(() => {
+      map.invalidateSize();
+      map.fitBounds(COUNTY_BOUNDS, FIT_OPTIONS);
+    }, 80);
     const markers = markerRefs.current;
     return () => {
       window.clearTimeout(resize);
@@ -84,13 +91,7 @@ export function TaiwanRiskMap({ counties, selectedCounty, onSelect }: TaiwanRisk
       });
 
       marker.bindTooltip(
-        `${county.county}<br>UV ${formatInteger(county.uvIndex)} · ${formatNumber(
-          Math.max(
-            county.heatIndex ?? -Infinity,
-            county.forecastMaxTemperature ?? -Infinity,
-            county.observedTemperature ?? -Infinity,
-          ),
-        )}°C<br>${county.overallLevel.label}`,
+        `${county.county}<br>UV ${formatInteger(county.uvIndex)} · ${formatNumber(peakHeat(county))}°C<br>${county.overallLevel.label}`,
         { direction: "top", offset: [0, -8], opacity: 0.95 },
       );
       marker.on("click", () => onSelect(county.county));
@@ -99,8 +100,13 @@ export function TaiwanRiskMap({ counties, selectedCounty, onSelect }: TaiwanRisk
     }
   }, [counties, onSelect, selectedCounty]);
 
+  // Only pan when the user picks a different county. Flying on mount or on a data
+  // refresh would hide the all-Taiwan overview (and the outlying islands).
+  const lastFocusedRef = useRef(selectedCounty);
   useEffect(() => {
     if (!selected || !mapRef.current) return;
+    if (lastFocusedRef.current === selected.county) return;
+    lastFocusedRef.current = selected.county;
     mapRef.current.flyTo([selected.lat, selected.lon], 8, { duration: 0.55 });
   }, [selected]);
 
