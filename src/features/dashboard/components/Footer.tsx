@@ -1,27 +1,17 @@
-import { FamilyMark } from "../../../components/FamilyMark";
-
 export function Footer() {
   return (
-    <footer className="mt-8 rounded-2xl border border-white/75 bg-ink-900 p-5 text-white shadow-card">
-      <div className="grid gap-5 md:grid-cols-[1.15fr_0.85fr]">
-        <div>
-          <FamilyMark inverse />
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-white/70">
-            資料來源以交通部中央氣象署開放資料為主。本專案非官方服務，風險提示供戶外活動規劃參考，正式警特報與健康指引請以主管機關公告為準。
-          </p>
-        </div>
-        <div className="grid gap-2 text-sm font-semibold text-white/75">
-          <a href="https://opendata.cwa.gov.tw/" target="_blank" rel="noreferrer">
-            中央氣象署開放資料平臺
-          </a>
-          <a href="https://www.cwa.gov.tw/" target="_blank" rel="noreferrer">
-            中央氣象署
-          </a>
-          <a href="https://data.gov.tw/" target="_blank" rel="noreferrer">
-            政府資料開放平臺
-          </a>
-        </div>
-      </div>
+    <footer>
+      <p>
+        資料來源：中央氣象署開放資料平臺，包括 O-A0003-001 局屬測站即時觀測、O-A0005-001 每日紫外線最大值、
+        F-C0032-001 36 小時預報、F-D0047-089 縣市 3 天逐 3 小時預報、F-D0047-091 縣市一週預報。
+        縣市界線來自內政部國土測繪中心（經 taiwan-atlas 處理）。
+      </p>
+      <p>
+        紫外線分級採中央氣象署五級。目前時段的紫外線為測站觀測值，其他時段依預報的每日最大值與日照曲線推估。
+        體感溫度採氣象署公式；五個體感分級是本站自訂的參考門檻，不是官方分級。高溫提醒以氣象署高溫資訊的氣溫門檻
+        （36°C 黃色、38°C 橙色）比對預報，實際燈號以氣象署發布為準。
+      </p>
+      <p>本站不是官方服務，建議僅供參考；天氣警特報請以中央氣象署為準。</p>
     </footer>
   );
 }

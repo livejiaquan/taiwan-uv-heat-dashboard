@@ -1,24 +1,6 @@
 export type RegionKey = "north" | "central" | "south" | "east" | "islands";
 
-export type RiskTone =
-  | "unknown"
-  | "low"
-  | "moderate"
-  | "high"
-  | "very-high"
-  | "extreme";
-
 export type DataMode = "live" | "demo";
-
-export interface RiskLevel {
-  tone: RiskTone;
-  label: string;
-  shortLabel: string;
-  score: number;
-  colorClass: string;
-  bgClass: string;
-  borderClass: string;
-}
 
 export interface CountyMeta {
   county: string;
@@ -37,67 +19,84 @@ export interface StationObservation {
   temperature?: number;
   humidity?: number;
   uvIndex?: number;
+  windSpeed?: number;
 }
 
+/** A forecast value valid at one instant (epoch ms). */
+export interface SeriesPoint {
+  time: number;
+  value: number;
+}
+
+/** A forecast value valid over [start, end) (epoch ms). */
+export interface SeriesBlock {
+  start: number;
+  end: number;
+  value: number;
+}
+
+export interface TextBlock {
+  start: number;
+  end: number;
+  text: string;
+}
+
+/** Forecast series for one county, merged from the CWA forecast datasets. */
 export interface CountyForecast {
   county: string;
-  maxTemperature?: number;
-  minTemperature?: number;
-  weather?: string;
-  startTime?: string;
-  endTime?: string;
+  temperature: SeriesPoint[];
+  apparent: SeriesPoint[];
+  humidity: SeriesPoint[];
+  rain: SeriesBlock[];
+  weather: TextBlock[];
+  uvDaily: SeriesBlock[];
+  maxTemperature: SeriesBlock[];
 }
 
-export interface CountyRisk {
-  county: string;
-  region: RegionKey;
-  regionLabel: string;
-  lat: number;
-  lon: number;
+export interface HourPoint {
+  /** UV index; estimated from the day's forecast maximum unless observed. */
+  uv?: number;
+  /** Apparent temperature (°C), CWA 體感溫度. */
+  apparent?: number;
+  /** Air temperature (°C). */
+  temperature?: number;
+  /** Probability of precipitation (%). */
+  rain?: number;
+  /** True when this hour carries live station readings instead of forecasts. */
+  observed: boolean;
+}
+
+export interface DayOutlook {
+  /** Taipei calendar date, YYYY-MM-DD. */
+  date: string;
+  weather?: string;
+  hours: HourPoint[];
+  uvMax?: number;
+  apparentMax?: number;
+  airMax?: number;
+}
+
+export interface CountyOutlook extends CountyMeta {
   observedAt?: string;
   stationCount: number;
-  uvIndex?: number;
-  uvSource: "current" | "dailyMax" | "demo" | "missing";
-  observedTemperature?: number;
-  humidity?: number;
-  heatIndex?: number;
-  forecastMaxTemperature?: number;
-  forecastWeather?: string;
-  dataQuality: "complete" | "partial" | "missing";
-  uvLevel: RiskLevel;
-  heatLevel: RiskLevel;
-  overallLevel: RiskLevel;
-  overallScore: number;
-  advice: AdviceItem[];
-}
-
-export interface AdviceItem {
-  title: string;
-  body: string;
-  tone: RiskTone;
-}
-
-export interface DashboardStats {
-  totalCounties: number;
-  dangerousCounties: number;
-  missingDataCount: number;
-  stale: boolean;
-  latestUpdate?: string;
-  highestUv?: CountyRisk;
-  highestHeat?: CountyRisk;
-  safest?: CountyRisk;
-  dataMode: DataMode;
-  sourceSummary: string;
-  errors: string[];
+  /** [today, tomorrow] in Taipei time. */
+  days: [DayOutlook, DayOutlook];
 }
 
 export interface DashboardData {
-  counties: CountyRisk[];
-  stats: DashboardStats;
+  mode: DataMode;
+  counties: CountyOutlook[];
+  generatedAt: string;
+  latestObservation?: string;
+  stale: boolean;
+  /** Human-readable problems with the sources, shown in the status line. */
+  issues: string[];
 }
 
 export interface RawCwaBundle {
   observations?: unknown;
   dailyUv?: unknown;
-  forecast?: unknown;
+  forecast36h?: unknown;
+  forecast3d?: unknown;
+  forecastWeek?: unknown;
 }
