@@ -1,41 +1,35 @@
-# Data Sources
+# Data sources
 
-The dashboard is designed around official Taiwan open data, mainly the Central Weather Administration (CWA) Open Data API.
+All weather data comes from the Central Weather Administration (CWA) Open Data platform.
 
-## CWA Endpoints
-
-| Dataset | Purpose | Fields Used |
+| Dataset | Content | Used for |
 | --- | --- | --- |
-| `O-A0003-001` | 10-minute surface observations | station, county, observation time, temperature, humidity, UV index when available |
-| `O-A0005-001` | daily maximum UV observations | station/county UV fallback when current UV coverage is incomplete |
-| `F-C0032-001` | 36-hour county forecast | county max/min temperature and weather description |
+| `O-A0003-001` | Manned-station current observations | Current hour: temperature, humidity, wind, UV; station → county lookup |
+| `O-A0005-001` | Daily maximum UV per station | Today's UV maximum when the week forecast has none |
+| `F-D0047-089` | County forecast, 3 days, every 3 hours | Apparent temperature, temperature, rain probability, weather |
+| `F-D0047-091` | County forecast, 1 week | Daily UV index, maximum temperature, 12-hour rain, weather |
+| `F-C0032-001` | County forecast, 36 hours | Weather, maximum temperature and rain where the others have gaps |
 
-## API Strategy
+Each dataset is fetched independently. A failing dataset only removes its own fields and is listed in the status line. If none of the observation, 3-day or 36-hour datasets is usable, the page falls back to the labelled demo scenario.
 
-`src/lib/cwa.ts` loads the three datasets in parallel. Each dataset may fail independently. If at least one live dataset returns usable data, the dashboard renders a degraded live view and reports which source failed. If no live dataset is available, it falls back to demo data.
+## Parsing notes
 
-The public demo mode exists for GitHub portfolio viewing and static hosting without exposing a CWA key. It is marked clearly in the UI.
+- Forecast parsers accept both the current field names (`Locations`, `ElementName: "體感溫度"`, `ElementValue: [{ ApparentTemperature }]`) and the older ones (`locations`, `elementName: "AT"`, `elementValue: [{ value }]`). Timestamps without an offset are read as Taiwan time.
+- `O-A0005-001` rows carry only `StationID` and `UVIndex`, with the date on `weatherElement.Date`; counties are resolved through the `O-A0003-001` station list.
+- Blank strings and sentinels such as `-99` are treated as missing, never as zero.
 
-## Environment Variable
+## Derived values
 
-```bash
-VITE_CWA_API_KEY=your-cwa-authorization-key
-```
+- **Hourly apparent temperature** is interpolated linearly between the 3-hourly forecast points (no extrapolation across gaps over 6 hours). Past hours of today usually have no forecast and stay empty.
+- **Current hour** uses stations observed within the last 90 minutes. Apparent temperature is computed with the CWA formula `AT = 1.04·T + 0.2·e − 0.65·V − 2.7`; the most oppressive station represents the county, and the highest UV reading is used.
+- **Hourly UV** other than the current hour is an estimate: the day's forecast maximum spread over a clear-sky curve peaking at 11:30. The UI labels it "預報推估".
+- **Heat reminder** compares the day's highest forecast or observed air temperature with the CWA 高溫資訊 thresholds (36°C yellow, 38°C orange). Multi-day criteria are not evaluated; the page tells readers to rely on the official alerts.
+- **Levels**: UV uses the CWA five-level scale. The five apparent-temperature bands (≤27, ≤31, ≤35, ≤39, >39 °C) are this project's guidance thresholds, not an official classification.
 
-Because this is a Vite client app, `VITE_` variables are bundled into browser code. For production quota control, place CWA calls behind a serverless proxy and expose only your own endpoint to the frontend.
+## Freshness
 
-## County Aggregation
+The status line shows the latest observation time. Data is marked stale when the newest observation is older than 45 minutes. With an API key the page refreshes every 10 minutes while visible; a failed refresh keeps the last live data on screen.
 
-The parser normalizes county names, including `台` and `臺` variants, then groups observations by county. A county record can still render with partial data if a station lacks UV or humidity.
+## Map
 
-For each county:
-
-- highest observed UV is preferred;
-- daily maximum UV is used as fallback. `O-A0005-001` rows only carry `StationID` and `UVIndex` (the date sits on `weatherElement.Date`), so the county is resolved through the `StationId` → `GeoInfo.CountyName` mapping from `O-A0003-001`. If the observation dataset fails, daily UV cannot be placed in a county and is reported as unusable;
-- the station with the highest NWS heat index (temperature and humidity from the same station) provides the county heat index;
-- forecast max temperature is compared against heat index;
-- the higher of UV risk and heat risk becomes the overall risk.
-
-## Stale Data
-
-Live data is marked stale when the newest county observation is older than 45 minutes. Demo mode is not marked stale because its timestamp is generated relative to the current browser session.
+County outlines come from the Ministry of the Interior via the [`taiwan-atlas`](https://github.com/dkaoster/taiwan-atlas) package (MIT), simplified and pre-projected by `scripts/build-taiwan-map.mjs`.

@@ -27,7 +27,7 @@ The workflow:
 3. Uploads `dist/` as the GitHub Pages artifact.
 4. Deploys the artifact to the `github-pages` environment.
 
-Leave `VITE_CWA_API_KEY` unset if demo mode is acceptable for public portfolio browsing.
+Leave `VITE_CWA_API_KEY` unset if demo mode is acceptable for public portfolio browsing. The page then says clearly that it shows demo data.
 
 If live data is required on GitHub Pages, add a repository secret named `VITE_CWA_API_KEY` (Settings → Secrets and variables → Actions); the deploy workflow passes it to the build step. Remember that the key is visible to browsers in a static frontend.
 
@@ -47,5 +47,5 @@ For stronger key control:
 
 1. Create a serverless endpoint that calls CWA.
 2. Store the CWA key only on the serverless platform.
-3. Replace `fetchCwaJson` in `src/lib/cwa.ts` with calls to that proxy.
+3. Replace `fetchCwaJson` in `src/lib/cwa.ts` with calls to that proxy (it fetches five datasets: `O-A0003-001`, `O-A0005-001`, `F-C0032-001`, `F-D0047-089`, `F-D0047-091`).
 4. Keep the frontend normalization and risk model unchanged.
