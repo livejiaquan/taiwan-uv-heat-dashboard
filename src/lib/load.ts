@@ -1,19 +1,20 @@
-import { buildDemoDashboard } from "../data/demo";
-import { loadCwaBundle } from "./cwa";
-import { buildLiveDashboard } from "./outlook";
-import type { DashboardData } from "./types";
+import { parseWeatherSnapshot } from "./snapshot";
+import type { WeatherSnapshot } from "./types";
 
 /**
- * Live CWA data when an authorization key is configured and at least one core
- * dataset answers; otherwise the clearly labelled demo scenario.
+ * Same-origin public data only. No API credentials and no implicit demo fallback.
  */
-export const loadDashboardData = async (apiKey?: string): Promise<DashboardData> => {
-  if (!apiKey) {
-    return buildDemoDashboard(["尚未設定中央氣象署授權碼，目前顯示示範資料。"]);
+export const loadDashboardData = async (): Promise<WeatherSnapshot> => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15_000);
+  try {
+    const response = await fetch(`${import.meta.env.BASE_URL}data/weather.json`, { cache: "no-store", signal: controller.signal });
+    if (!response.ok) throw new Error("目前無法取得氣象資料快照，請稍後再試。");
+    return parseWeatherSnapshot(await response.json());
+  } catch (error) {
+    if (controller.signal.aborted) throw new Error("氣象資料讀取逾時，請稍後再試。");
+    throw error;
+  } finally {
+    clearTimeout(timeout);
   }
-  const { bundle, issues, usable } = await loadCwaBundle(apiKey);
-  if (!usable) {
-    return buildDemoDashboard([...issues, "中央氣象署資料暫時無法使用，目前顯示示範資料。"]);
-  }
-  return buildLiveDashboard(bundle, issues);
 };

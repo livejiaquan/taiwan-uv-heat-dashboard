@@ -11,10 +11,10 @@ import { StatusLine } from "./components/StatusLine";
 import { Timeline } from "./components/Timeline";
 import { TopBar } from "./components/TopBar";
 import { Verdict } from "./components/Verdict";
-import { useNow } from "./useNow";
 
 interface DashboardProps {
   data: DashboardData;
+  now: number;
   refreshing: boolean;
   onRefresh: () => void;
 }
@@ -26,8 +26,7 @@ const initialSkin = () => {
   return Number.isInteger(stored) && stored >= 0 && stored < SKIN_TYPES.length ? stored : 1;
 };
 
-export function Dashboard({ data, refreshing, onRefresh }: DashboardProps) {
-  const now = useNow();
+export function Dashboard({ data, now, refreshing, onRefresh }: DashboardProps) {
   const nowHour = taipeiHour(now);
 
   const [countyName, setCountyName] = useState(() => storage.get("county") ?? DEFAULT_COUNTY);
@@ -106,7 +105,7 @@ export function Dashboard({ data, refreshing, onRefresh }: DashboardProps) {
         onSelectCounty={selectCounty}
       />
       <div className="wrap">
-        <StatusLine data={data} now={now} refreshing={refreshing} onRefresh={onRefresh} />
+        <StatusLine data={data} county={county} now={now} refreshing={refreshing} onRefresh={onRefresh} />
         <main>
           <Verdict
             sectionRef={verdictRef}

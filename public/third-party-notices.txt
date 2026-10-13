@@ -1,0 +1,43 @@
+Weather data
+
+交通部中央氣象署 2026 氣象觀測站-10分鐘綜觀氣象資料（O-A0003-001）、
+紫外線指數-每日紫外線指數最大值（O-A0005-001）、
+鄉鎮天氣預報-台灣未來3天天氣預報（F-D0047-089）、
+鄉鎮天氣預報-台灣未來1週天氣預報（F-D0047-091）；
+選用 API 模式另含一般天氣預報-今明36小時天氣預報（F-C0032-001）。
+此開放資料依政府資料開放授權條款 (Open Government Data License) 進行公眾釋出，
+使用者於遵守本條款各項規定之前提下，得利用之。
+政府資料開放授權條款－第1版：https://data.gov.tw/license
+Source catalog: https://opendata.cwa.gov.tw/
+Public-download catalogs: https://data.gov.tw/dataset/9178,
+https://data.gov.tw/dataset/9039, https://data.gov.tw/dataset/9307,
+https://data.gov.tw/dataset/9308
+This site normalizes the data and derives hourly UV estimates and guidance.
+It is not an official service or an official hourly UV forecast.
+
+Map
+
+County boundaries: Ministry of the Interior, National Land Surveying and Mapping Center.
+Processed using taiwan-atlas: https://github.com/dkaoster/taiwan-atlas
+
+MIT License
+
+Copyright (c) 2020 Daniel Kao
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

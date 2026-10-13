@@ -1,13 +1,13 @@
 import { counties } from "../data/counties";
-import { parseDailyUvPayload, parseObservationPayload, stationCountyMap } from "./cwa";
-import { blockAt, emptyForecast, mergeForecasts, parseForecastPayload, valueAt } from "./forecast";
+import { blockAt, emptyForecast, valueAt } from "./forecast";
+import { createWeatherSnapshot, SNAPSHOT_MAX_AGE_MS } from "./snapshot";
 import { apparentTemperature, uvDayShape } from "./levels";
 import { HOUR_MS, addDays, hourStart, taipeiDate, taipeiHour } from "./time";
-import type { CountyForecast, CountyOutlook, DashboardData, DayOutlook, HourPoint, RawCwaBundle, StationObservation } from "./types";
+import type { CountyForecast, CountyOutlook, DashboardData, DayOutlook, HourPoint, MetricOrigin, RawCwaBundle, StationObservation, WeatherSnapshot } from "./types";
 
 export const STALE_AFTER_MINUTES = 45;
 /** Observations older than this are not shown as the current hour. */
-const OBSERVATION_MAX_AGE_MS = 90 * 60 * 1000;
+const OBSERVATION_MAX_AGE_MS = STALE_AFTER_MINUTES * 60_000;
 const CLOCK_SKEW_MS = 5 * 60 * 1000;
 
 const round1 = (value: number) => Math.round(value * 10) / 10;
@@ -35,7 +35,12 @@ interface CurrentReading {
   uv?: number;
   temperature?: number;
   apparent?: number;
+  uvOrigin?: MetricOrigin;
+  apparentOrigin?: MetricOrigin;
+  temperatureOrigin?: MetricOrigin;
 }
+
+const stationOrigin = (s: StationObservation): MetricOrigin => ({ kind: "observation", observedAt: s.observedAt, stationName: s.stationName, stationId: s.stationId });
 
 /** County-level current reading: the strongest UV and the most oppressive station. */
 const currentReading = (stations: StationObservation[], now: number): CurrentReading => {
@@ -43,21 +48,30 @@ const currentReading = (stations: StationObservation[], now: number): CurrentRea
     const time = validTime(s.observedAt, now);
     return time !== undefined && now - time <= OBSERVATION_MAX_AGE_MS;
   });
-  const uv = maxOf(fresh.map((s) => s.uvIndex));
+  const uvStation = fresh.filter((s) => s.uvIndex !== undefined).sort((a, b) => b.uvIndex! - a.uvIndex!)[0];
+  const uv = uvStation?.uvIndex;
   let apparent: number | undefined;
   let temperature: number | undefined;
+  let heatStation: StationObservation | undefined;
   for (const s of fresh) {
     const at = apparentTemperature(s.temperature, s.humidity, s.windSpeed);
     if (at !== undefined && (apparent === undefined || at > apparent)) {
       apparent = at;
       temperature = s.temperature;
+      heatStation = s;
     }
   }
-  temperature ??= maxOf(fresh.map((s) => s.temperature));
-  const observedAt = fresh
+  const temperatureStation = heatStation ?? fresh.filter((s) => s.temperature !== undefined).sort((a, b) => b.temperature! - a.temperature!)[0];
+  temperature ??= temperatureStation?.temperature;
+  const observedAt = [uvStation, heatStation, temperatureStation]
+    .filter((s): s is StationObservation => Boolean(s))
     .map((s) => s.observedAt!)
     .sort((a, b) => Date.parse(b) - Date.parse(a))[0];
-  return { observedAt, uv, temperature, apparent };
+  return { observedAt, uv, temperature, apparent,
+    uvOrigin: uvStation ? stationOrigin(uvStation) : undefined,
+    apparentOrigin: heatStation ? stationOrigin(heatStation) : undefined,
+    temperatureOrigin: temperatureStation ? stationOrigin(temperatureStation) : undefined,
+  };
 };
 
 /** Daily UV maximum for a date: the forecast block starting that day, else today's observed maximum. */
@@ -88,12 +102,15 @@ const buildDay = (
       temperature: temperature === undefined ? undefined : round1(temperature),
       rain,
       observed: false,
+      uvOrigin: uvMax === undefined ? undefined : { kind: "estimate" },
+      apparentOrigin: apparent === undefined ? undefined : { kind: valueAt(forecast.apparent, time) === undefined ? "estimate" : "forecast" },
+      temperatureOrigin: temperature === undefined ? undefined : { kind: "forecast" },
     };
     if (hour === nowHour && current) {
       // The current hour shows what the stations measure right now.
-      if (current.uv !== undefined) point.uv = current.uv;
-      if (current.temperature !== undefined) point.temperature = current.temperature;
-      if (current.apparent !== undefined) point.apparent = current.apparent;
+      if (current.uv !== undefined) { point.uv = current.uv; point.uvOrigin = current.uvOrigin; }
+      if (current.temperature !== undefined) { point.temperature = current.temperature; point.temperatureOrigin = current.temperatureOrigin; }
+      if (current.apparent !== undefined) { point.apparent = current.apparent; point.apparentOrigin = current.apparentOrigin; }
       point.observed = current.uv !== undefined || current.apparent !== undefined;
     }
     return point;
@@ -110,14 +127,17 @@ const buildDay = (
   return summarizeDay({ date, weather, hours }, forecastMax);
 };
 
-export const buildLiveDashboard = (bundle: RawCwaBundle, issues: string[], now = Date.now()): DashboardData => {
-  const observations = parseObservationPayload(bundle.observations);
-  const dailyUv = parseDailyUvPayload(bundle.dailyUv, stationCountyMap(bundle.observations));
-  const forecasts = mergeForecasts(
-    parseForecastPayload(bundle.forecast3d),
-    parseForecastPayload(bundle.forecastWeek),
-    parseForecastPayload(bundle.forecast36h),
-  );
+export const buildLiveDashboard = (bundle: RawCwaBundle, issues: string[], now = Date.now()): DashboardData =>
+  buildSnapshotDashboard(createWeatherSnapshot(bundle, issues, now), now);
+
+export const buildSnapshotDashboard = (snapshot: WeatherSnapshot, now = Date.now()): DashboardData => {
+  const age = now - Date.parse(snapshot.fetchedAt);
+  const expired = age > SNAPSHOT_MAX_AGE_MS || age < -CLOCK_SKEW_MS;
+  const observations = expired ? [] : snapshot.observations;
+  const dailyUv = expired ? [] : snapshot.dailyUv;
+  const forecasts = new Map((expired ? [] : snapshot.forecasts).map((f) => [f.county, f]));
+  const expiryIssue = age < -CLOCK_SKEW_MS ? "資料快照時間異常，暫停顯示數值與時段建議。" : "資料快照已超過 2 小時，暫停顯示數值與時段建議。";
+  const issues = expired ? [expiryIssue, ...snapshot.issues] : snapshot.issues;
   const today = taipeiDate(now);
   const tomorrow = addDays(today, 1);
 
@@ -152,7 +172,7 @@ export const buildLiveDashboard = (bundle: RawCwaBundle, issues: string[], now =
   return {
     mode: "live",
     counties: outlooks,
-    generatedAt: new Date(now).toISOString(),
+    generatedAt: snapshot.fetchedAt,
     latestObservation,
     stale,
     issues: missing ? [...issues, `${missing} 個縣市目前缺少紫外線與體感溫度資料`] : issues,

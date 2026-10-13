@@ -41,7 +41,7 @@ describe("observation parsing", () => {
       ["臺北市", 9.3],
       ["高雄市", 10.1],
     ]);
-    expect(rows[0].observedAt).toBe("2026-10-06T00:00:00+08:00");
+    expect(rows[0].observedAt).toBe("2026-10-05T16:00:00.000Z");
     expect(parseDailyUvPayload(fx.dailyUv())).toEqual([]);
   });
 });
@@ -118,6 +118,20 @@ describe("CWA requests", () => {
           }),
       ),
     );
+    const request = fetchCwaJson("O-A0003-001", "key");
+    const rejection = expect(request).rejects.toThrow("O-A0003-001 request timed out");
+    await vi.advanceTimersByTimeAsync(15_000);
+    await rejection;
+  });
+
+  it("keeps the timeout active while the response body is stalled", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(async (_url: string, init?: RequestInit) => ({
+      ok: true,
+      json: () => new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
+      }),
+    })));
     const request = fetchCwaJson("O-A0003-001", "key");
     const rejection = expect(request).rejects.toThrow("O-A0003-001 request timed out");
     await vi.advanceTimersByTimeAsync(15_000);
