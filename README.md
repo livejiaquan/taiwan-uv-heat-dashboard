@@ -18,7 +18,7 @@
 
 ## 資料
 
-使用中央氣象署開放資料平臺的五個資料集，詳見 [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md)。GitHub Actions 定時取得並發布資料快照；API 金鑰留在 Actions Secret，瀏覽器只讀同站 JSON。缺資料或過期時明示無法評估；示範資料必須以 `?demo=1` 主動進入。排程為最佳努力更新，本站不是即時警報服務。
+使用中央氣象署官方公開氣象檔案，預設免註冊與私人金鑰；也支援 Actions Secret 的 API 模式，詳見 [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md)。GitHub Actions 定時取得並發布資料快照，瀏覽器只讀同站 JSON。缺資料或過期時明示無法評估；示範資料必須以 `?demo=1` 主動進入。排程為最佳努力更新，本站不是即時警報服務。
 
 ## 開發
 
@@ -36,7 +36,7 @@ npm test
 npm run build:public
 ```
 
-Node.js 22.14 以上。公開部署需在 Actions 設定 `CWA_API_KEY` Secret，詳見部署文件。無 Secret 仍可建置，但只顯示資料不可用。
+Node.js 22.14 以上。啟用 GitHub Actions 與 Pages 即可收集官方公開檔案；`CWA_API_KEY` Secret 為選用的 API 模式，詳見部署文件。
 
 - 架構：[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 - 部署：[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
@@ -46,3 +46,5 @@ Node.js 22.14 以上。公開部署需在 Actions 設定 `CWA_API_KEY` Secret，
 本站不是官方服務，內容僅供參考；天氣警特報與高溫資訊燈號請以中央氣象署發布為準。體感溫度的五個分級是本站自訂的參考門檻，不是官方分級。
 
 貢獻方式見 [CONTRIBUTING.md](CONTRIBUTING.md)，安全回報見 [SECURITY.md](SECURITY.md)。
+
+程式碼採 [MIT License](LICENSE)。氣象資料與地圖來源的授權及標示另見 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。

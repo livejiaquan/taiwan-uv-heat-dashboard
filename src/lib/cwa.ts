@@ -6,6 +6,14 @@ import type { RawCwaBundle, StationObservation } from "./types";
 
 const CWA_BASE = "https://opendata.cwa.gov.tw/api/v1/rest/datastore";
 const CWA_REQUEST_TIMEOUT_MS = 15_000;
+// Targets of the JSON download links published by data.gov.tw datasets
+// 9178, 9039, 9307 and 9308. These official files require no private key.
+const PUBLIC_FILES: Partial<Record<string, string>> = {
+  "O-A0003-001": "Observation/O-A0003-001.json",
+  "O-A0005-001": "Observation/O-A0005-001.json",
+  "F-D0047-089": "Forecast/F-D0047-089.json",
+  "F-D0047-091": "Forecast/F-D0047-091.json",
+};
 
 export const DATASETS = {
   observations: "O-A0003-001",
@@ -48,12 +56,25 @@ export const fetchCwaJson = async (dataId: string, apiKey: string): Promise<unkn
   const url = new URL(`${CWA_BASE}/${dataId}`);
   url.searchParams.set("Authorization", apiKey);
   url.searchParams.set("format", "JSON");
+  return fetchJson(dataId, url.toString());
+};
 
+const fetchPublicCwaJson = async (dataId: string): Promise<unknown> => {
+  const file = PUBLIC_FILES[dataId];
+  if (!file) throw new Error("Unsupported public dataset");
+  const json = await fetchJson(dataId, `https://cwaopendata.s3.ap-northeast-1.amazonaws.com/${file}`);
+  const envelope = asRecord(asRecord(json).cwaopendata);
+  const dataset = envelope.Dataset ?? envelope.dataset;
+  if (!dataset || typeof dataset !== "object" || Array.isArray(dataset)) throw new Error("Invalid public CWA file");
+  return { records: dataset };
+};
+
+const fetchJson = async (dataId: string, url: string): Promise<unknown> => {
   const controller = new AbortController();
   const timeout = globalThis.setTimeout(() => controller.abort(), CWA_REQUEST_TIMEOUT_MS);
 
   try {
-    const response = await fetch(url.toString(), {
+    const response = await fetch(url, {
       headers: { Accept: "application/json" },
       signal: controller.signal,
     });
@@ -147,9 +168,9 @@ export interface CwaBundleResult {
 }
 
 /** Fetch every dataset independently; a failing source only drops its own fields. */
-export const loadCwaBundle = async (apiKey: string): Promise<CwaBundleResult> => {
-  const keys = Object.keys(DATASETS) as Array<keyof typeof DATASETS>;
-  const results = await Promise.allSettled(keys.map((key) => fetchCwaJson(DATASETS[key], apiKey)));
+export const loadCwaBundle = async (apiKey?: string): Promise<CwaBundleResult> => {
+  const keys = (Object.keys(DATASETS) as Array<keyof typeof DATASETS>).filter((key) => apiKey || PUBLIC_FILES[DATASETS[key]]);
+  const results = await Promise.allSettled(keys.map((key) => apiKey ? fetchCwaJson(DATASETS[key], apiKey) : fetchPublicCwaJson(DATASETS[key])));
   const bundle: RawCwaBundle = {};
   const issues: string[] = [];
 
@@ -174,7 +195,7 @@ export const loadCwaBundle = async (apiKey: string): Promise<CwaBundleResult> =>
     issues.push("每日紫外線最大值缺少測站對照，暫不使用");
   }
 
-  const usable = Boolean(bundle.observations || bundle.forecast3d || bundle.forecast36h);
+  const usable = Boolean(bundle.observations || bundle.forecast3d || bundle.forecastWeek || bundle.forecast36h);
   return { bundle, issues, usable };
 };
 

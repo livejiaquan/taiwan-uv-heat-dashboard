@@ -3,7 +3,7 @@
 A static React application, with GitHub Actions as the weather collection boundary. The same parsers are used in collection tests and the Actions collector; browser requests never carry CWA credentials.
 
 ```text
-Actions Secret CWA_API_KEY
+Official public CWA files (default) / Actions Secret CWA_API_KEY (optional API)
   → cwa.ts / forecast.ts (source requests and parsing)
   → snapshot.ts (normalized versioned JSON)
   → public/data/weather.json → GitHub Pages
@@ -18,8 +18,8 @@ Actions Secret CWA_API_KEY
 
 Missing metrics remain `undefined`. Incomplete data cannot produce a positive outdoor verdict; known high risk still produces a warning. Daily gaps cannot be interpreted as a low-risk whole day, and exercise intervals use consecutive known lower-risk hours only. Estimated hourly UV is labelled as the site's estimate, not an official hourly forecast.
 
-`?demo=1` explicitly selects synthetic data. Normal mode never falls back to demo on missing credentials or network failure. The app shell offers official information and a clearly labelled link to demo when no snapshot can be loaded.
+`?demo=1` explicitly selects synthetic data. Normal mode never falls back to demo on network failure. Without a key, the collector reads the official public file targets linked by data.gov.tw; a configured key selects the authenticated API. Both transports use the same parsers and validation. The app shell offers official information and a clearly labelled link to demo when no snapshot can be loaded.
 
 ## Verification
 
-Vitest covers source parsing, normalized snapshot validation, missing/partial data, per-metric sources, expiry, future timestamps, midnight rollover, collection failures/redaction, and built-asset credential scanning. Browser checks cover rendered demo/unavailable/partial/expired states and responsive layout. CI runs tests, lint, typecheck, no-key collection, and the guarded public build. Deployment repeats validation before uploading a Pages artifact.
+Vitest covers both source transports, parsing, normalized snapshot validation, missing/partial data, per-metric sources, expiry, future timestamps, midnight rollover, collection failures/redaction, and built-asset credential scanning. Browser checks cover rendered live/demo/unavailable/partial/expired states and responsive layout. CI runs deterministic fixture tests, lint, typecheck, and the guarded public build without network-dependent collection. Deployment repeats validation and collects actual weather before uploading a Pages artifact.

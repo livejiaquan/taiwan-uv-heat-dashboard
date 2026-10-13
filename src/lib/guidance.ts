@@ -186,7 +186,7 @@ export const adviceFor = (day: DayOutlook, audience: Audience, dayWord: string):
   const sets: Record<Audience, AdviceItem[]> = {
     general: [
       [protect, "防曬", uvHigh ? "撐傘或戴寬簷帽，擦 SPF 30 以上防曬，每 2 小時補擦，流汗擦汗後也要補。" : "長時間在戶外仍建議擦防曬。"],
-      [hot ?? "全天", "補水", day.apparentMax === undefined ? "體感溫度資料不足，無法評估熱感；外出隨身帶水並查官方預報。" : heatHigh ? "不要等口渴才喝水，外出隨身帶水，室內外進出避免溫差太大。" : "已知時段熱感較低；活動時仍須補水與休息，缺值時段請查官方預報。"],
+      [hot ?? "全天", "補水", day.apparentMax === undefined ? "體感溫度資料不足，無法評估熱感；外出隨身帶水並查官方預報。" : hot ? "不要等口渴才喝水，外出隨身帶水，室內外進出避免溫差太大。" : "已知時段熱感較低；活動時仍須補水與休息，缺值時段請查官方預報。"],
       [peak, "最熱時段", peakBody],
     ],
     family: [
