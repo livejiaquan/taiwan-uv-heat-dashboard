@@ -54,13 +54,7 @@ export const factsFor = (day: DayOutlook): DayFacts => {
   const ok = hours.map(
     (h, hour) => hour >= 5 && hour <= 21 && h.uv !== undefined && h.uv < PROTECT_UV && h.apparent !== undefined && h.apparent < HOT,
   );
-  const exercise: string[] = [];
-  if (peakHour !== undefined) {
-    const morning = ok.slice(0, peakHour).lastIndexOf(true);
-    if (morning >= 5) exercise.push(`${pad2(morning + 1)} 時前`);
-    const evening = ok.findIndex((good, hour) => good && hour > peakHour!);
-    if (evening >= 0) exercise.push(`${pad2(evening)} 時後`);
-  }
+  const exercise = ranges(ok).map(formatRange);
 
   const rainWord = day.weather?.includes("雷") ? "雷陣雨" : "陣雨";
   return { protect, hot, wet, peakHour, exercise, rainWord };
@@ -88,11 +82,24 @@ export const verdictFor = (
   const apparent = point?.apparent;
   const ul = uvLevel(uv);
   const tl = heatLevel(apparent);
-  const protectText = facts.protect.length ? formatRanges(facts.protect) : day.uvMax === undefined ? "資料不足" : `${dayWord}不需特別防曬`;
+  const completeUv = day.hours.every((h) => h.uv !== undefined);
+  const protectText = facts.protect.length
+    ? `${formatRanges(facts.protect)}${completeUv ? "" : "（其餘時段資料不足）"}`
+    : completeUv ? `${dayWord}不需特別防曬` : "資料不足";
   const base = { uv, apparent, uvIndex: ul, heatIndex: tl, protectText };
 
   if (ul < 0 && tl < 0) {
     return { ...base, title: "這個時段資料不足", lede: "目前沒有這個時段的紫外線與體感溫度資料，出門前請以中央氣象署最新資訊為準。" };
+  }
+
+  if (ul < 0 || tl < 0) {
+    const missing = ul < 0 ? "紫外線" : "體感溫度";
+    const knownRisk = ul >= 2 || tl >= 2;
+    return {
+      ...base,
+      title: knownRisk ? "已知風險偏高，不建議長時間在戶外" : "這個時段資料不足，無法完整評估",
+      lede: `${missing}資料不足。${uv === undefined ? "" : `已知紫外線 ${Math.round(uv)}。`}${apparent === undefined ? "" : `已知體感 ${Math.round(apparent)}°。`}出門前請確認中央氣象署最新資訊。`,
+    };
   }
 
   const sunDown = (uv ?? 0) === 0 && (hour >= 17 || hour < 7);
@@ -121,12 +128,12 @@ export const verdictFor = (
   const severity = Math.max(ul >= 3 ? 3 : ul, tl);
   const title =
     severity >= 3
-      ? "現在不建議長時間在戶外"
+      ? "這個時段不建議長時間在戶外"
       : severity === 2
         ? "可以出門，做好防曬與補水"
         : severity === 1
           ? "可以出門，留意防曬"
-          : "現在很適合外出";
+          : "這個時段很適合外出";
 
   const parts: string[] = [];
   if (uv !== undefined && ul >= 3) {
@@ -169,17 +176,17 @@ export const adviceFor = (day: DayOutlook, audience: Audience, dayWord: string):
   const heatHigh = heatLevel(day.apparentMax) >= 3;
   const protect = facts.protect.length ? formatRanges(facts.protect) : "全天";
   const hot = facts.hot.length ? formatRanges(facts.hot) : undefined;
-  const exercise = facts.exercise.length ? facts.exercise.join("、") : `${dayWord}沒有理想時段`;
+  const exercise = facts.exercise.length ? facts.exercise.join("、") : "無法確認較低曝曬與熱感時段";
   const peak = facts.peakHour === undefined ? "最熱時段" : `${pad2(facts.peakHour)} 時前後`;
   const peakBody =
     day.apparentMax === undefined
       ? "體感溫度資料不足，出門前請再確認中央氣象署預報。"
-      : `${dayWord}體感最高約 ${Math.round(day.apparentMax)}°，盡量把通勤和採買排在這個時段之外。`;
+      : `已知時段中，${dayWord}體感最高約 ${Math.round(day.apparentMax)}°；其餘缺值時段無法比較。`;
 
   const sets: Record<Audience, AdviceItem[]> = {
     general: [
       [protect, "防曬", uvHigh ? "撐傘或戴寬簷帽，擦 SPF 30 以上防曬，每 2 小時補擦，流汗擦汗後也要補。" : "長時間在戶外仍建議擦防曬。"],
-      [hot ?? "全天", "補水", heatHigh ? "不要等口渴才喝水，外出隨身帶水，室內外進出避免溫差太大。" : "一般補水即可，活動久了記得休息。"],
+      [hot ?? "全天", "補水", day.apparentMax === undefined ? "體感溫度資料不足，無法評估熱感；外出隨身帶水並查官方預報。" : hot ? "不要等口渴才喝水，外出隨身帶水，室內外進出避免溫差太大。" : "已知時段熱感較低；活動時仍須補水與休息，缺值時段請查官方預報。"],
       [peak, "最熱時段", peakBody],
     ],
     family: [
@@ -205,7 +212,7 @@ export const shareText = (county: string, day: DayOutlook, dayWord: string, demo
   const facts = factsFor(day);
   const lines = [`【${county}・${dayWord}曬熱提醒】`];
   if (day.uvMax !== undefined) {
-    const protect = facts.protect.length ? formatRanges(facts.protect) : "不需特別防曬";
+    const protect = facts.protect.length ? formatRanges(facts.protect) : day.hours.every((h) => h.uv !== undefined) ? "不需特別防曬" : "資料不足";
     lines.push(`防曬時段：${protect}（最高 UV ${Math.round(day.uvMax)}，${UV_LEVELS[uvLevel(day.uvMax)].name}）`);
   }
   if (facts.peakHour !== undefined && day.apparentMax !== undefined) {
@@ -215,8 +222,9 @@ export const shareText = (county: string, day: DayOutlook, dayWord: string, demo
   if (alert) lines.push(`高溫：最高氣溫約 ${Math.round(day.airMax!)}°C，達氣象署高溫資訊${alert.name}`);
   if (facts.wet.length) lines.push(`降雨：${formatRanges(facts.wet)}可能有${facts.rainWord}`);
   if (facts.peakHour !== undefined) {
-    lines.push(`適合運動：${facts.exercise.length ? facts.exercise.join("、") : `${dayWord}全天偏熱，改室內`}`);
+    lines.push(`曝曬與熱感較低：${facts.exercise.length ? facts.exercise.join("、") : "無法確認，請再查官方預報"}`);
   }
+  if (day.hours.some((h) => h.uv === undefined || h.apparent === undefined)) lines.push("部分時段資料不足，不能據此認定全天低風險。");
   const pack = packFor(day).map(([item]) => item);
   if (pack.length) lines.push(`出門帶：${pack.join("、")}`);
   lines.push(demo ? "（台灣曬熱指南・示範資料）" : "（台灣曬熱指南・資料來源：中央氣象署）");

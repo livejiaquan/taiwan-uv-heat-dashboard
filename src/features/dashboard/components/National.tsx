@@ -51,7 +51,7 @@ export function National({ counties, dayIndex, dayWord, selected, metric, onMetr
   const value = (c: CountyOutlook) => (metric === "uv" ? c.days[dayIndex].uvMax : c.days[dayIndex].apparentMax);
   const fill = (c: CountyOutlook) => (metric === "uv" ? uvColor(uvLevel(value(c))) : heatColor(heatLevel(value(c))));
   const describe = (c: CountyOutlook) =>
-    metric === "uv" ? `${dayWord}最高 UV ${fmt(value(c))}` : `${dayWord}最高體感 ${fmt(value(c), "°")}`;
+    metric === "uv" ? `${dayWord}已知最高 UV ${fmt(value(c))}` : `${dayWord}已知最高體感 ${fmt(value(c), "°")}`;
   const byName = new Map(counties.map((c) => [c.county, c]));
   const caption = byName.get(hovered ?? selected) ?? byName.get(selected)!;
 
@@ -72,7 +72,7 @@ export function National({ counties, dayIndex, dayWord, selected, metric, onMetr
       <div className="section-head">
         <div>
           <h2 id="national-title">全台比較</h2>
-          <p>{`各縣市${dayWord}的最高值。點地圖或清單切換上方縣市。`}</p>
+          <p>{`各縣市${dayWord}資料中的最高值，缺值時段無法比較。點地圖或清單切換上方縣市。`}</p>
         </div>
         <div className="metric-toggle" role="group" aria-label="比較指標">
           <button className="tab" type="button" aria-pressed={metric === "uv"} onClick={() => onMetric("uv")}>

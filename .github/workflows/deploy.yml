@@ -5,6 +5,9 @@ on:
     branches:
       - main
   workflow_dispatch:
+  schedule:
+    # Best effort; avoid the busy start of each hour. The UI enforces expiry.
+    - cron: '7,27,47 * * * *'
 
 permissions:
   contents: read
@@ -17,7 +20,9 @@ concurrency:
 
 jobs:
   build:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Checkout
@@ -35,11 +40,14 @@ jobs:
       - name: Verify
         run: npm run lint && npm run typecheck && npm test
 
-      - name: Build
-        run: npm run build
+      - name: Collect public weather snapshot
+        run: npm run collect:weather
         env:
-          # Optional repository secret; when unset the site builds in demo mode.
-          VITE_CWA_API_KEY: ${{ secrets.VITE_CWA_API_KEY }}
+          # Kept on the runner; never passed to Vite or written to artifacts.
+          CWA_API_KEY: ${{ secrets.CWA_API_KEY }}
+
+      - name: Build and scan public artifacts
+        run: npm run build:public
 
       - name: Configure Pages
         uses: actions/configure-pages@v6

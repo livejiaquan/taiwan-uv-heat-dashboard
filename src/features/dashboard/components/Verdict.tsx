@@ -12,8 +12,14 @@ import {
   uvInk,
   type Level,
 } from "../../../lib/levels";
-import { pad2 } from "../../../lib/time";
-import type { CountyOutlook, DayOutlook } from "../../../lib/types";
+import { formatClock, pad2 } from "../../../lib/time";
+import type { CountyOutlook, DayOutlook, MetricOrigin } from "../../../lib/types";
+
+const sourceText = (origin?: MetricOrigin): string => {
+  if (!origin) return "資料不足";
+  if (origin.kind === "observation") return `測站觀測・${origin.stationName}・${formatClock(origin.observedAt)}`;
+  return origin.kind === "forecast" ? "氣象署預報" : "本站推估（非逐時官方預報）";
+};
 
 interface VerdictProps {
   sectionRef: RefObject<HTMLElement | null>;
@@ -37,7 +43,7 @@ export function Verdict(props: VerdictProps) {
   const facts = factsFor(day);
   const point = day.hours[hour];
   const alert = heatAlertFor(day.airMax);
-  const uvSource = point?.uv === undefined || demo ? "" : point.observed ? "測站觀測" : "預報推估";
+  const uvSource = point?.uv === undefined || demo ? "" : point.uvOrigin?.kind === "observation" ? "測站觀測" : "本站推估";
 
   return (
     <section className="verdict" id="verdict" ref={sectionRef} aria-labelledby="v-title">
@@ -90,6 +96,7 @@ export function Verdict(props: VerdictProps) {
           <MeterValue value={verdict.uv} level={verdict.uvIndex} levels={UV_LEVELS} color={uvColor} ink={uvInk} />
           <Scale levels={UV_LEVELS} active={verdict.uvIndex} color={uvColor} />
           <p className="meter-foot">{[`${pad2(hour)} 時`, uvSource].filter(Boolean).join(" · ")}</p>
+          {!demo ? <p className="source-note">{sourceText(point?.uvOrigin)}</p> : null}
         </div>
         <div className="burn">
           <div className="burn-row">
@@ -119,6 +126,10 @@ export function Verdict(props: VerdictProps) {
           />
           <Scale levels={HEAT_LEVELS} active={verdict.heatIndex} color={heatColor} />
           <p className="meter-foot">{point?.temperature === undefined ? "氣溫 --" : `氣溫 ${Math.round(point.temperature)}°`}</p>
+          {!demo ? <>
+            <p className="source-note">體感：{sourceText(point?.apparentOrigin)}</p>
+            <p className="source-note">氣溫：{sourceText(point?.temperatureOrigin)}</p>
+          </> : null}
         </div>
       </div>
 
@@ -129,7 +140,7 @@ export function Verdict(props: VerdictProps) {
             <dd>{verdict.protectText}</dd>
           </div>
           <div className="fact">
-            <dt>最熱（體感）</dt>
+            <dt>已知最高（體感）</dt>
             <dd>
               {facts.peakHour === undefined || day.apparentMax === undefined
                 ? "--"
@@ -139,7 +150,7 @@ export function Verdict(props: VerdictProps) {
           <div className="fact">
             <dt>適合運動</dt>
             <dd>
-              {facts.peakHour === undefined ? "--" : facts.exercise.length ? facts.exercise.join("、") : `${dayWord}全天偏熱`}
+              {facts.exercise.length ? facts.exercise.join("、") : "無法確認"}
             </dd>
           </div>
         </dl>
@@ -277,7 +288,9 @@ function PackList(props: { county: string; day: DayOutlook; dayWord: string; dem
         </ul>
       ) : (
         <p className="share-status" style={{ color: "var(--muted)" }}>
-          {day.uvMax === undefined && day.apparentMax === undefined ? "資料不足，暫時無法建議。" : `${dayWord}不需要特別準備。`}
+          {day.hours.some((h) => h.uv === undefined || h.apparent === undefined || h.rain === undefined)
+            ? "資料不足，暫時無法產生完整出門清單；請查官方預報。"
+            : `${dayWord}已知數值未觸發額外裝備提醒，外出仍請留意天氣。`}
         </p>
       )}
       <p className="share-status" role="status">

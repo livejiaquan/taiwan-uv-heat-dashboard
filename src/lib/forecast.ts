@@ -59,6 +59,9 @@ const addTo = (forecast: CountyForecast, key: ElementKey, time: Record<string, u
     return;
   }
   if (number === undefined) return;
+  const [min, max] = key === "humidity" || key === "rain" ? [0, 100]
+    : key === "uvDaily" ? [0, 30] : key === "apparent" ? [-80, 80] : [-50, 60];
+  if (number < min || number > max) return;
   if (key === "temperature" || key === "apparent" || key === "humidity") {
     // Point series; a block (older datasets) is treated as valid at its start.
     const at = point ?? start;
