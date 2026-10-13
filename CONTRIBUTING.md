@@ -8,7 +8,7 @@ Before submitting, run:
 npm test
 npm run lint
 npm run typecheck
-npm run collect:weather  # no key: honest unavailable snapshot
+npm run collect:weather  # official public files; no private key required
 npm run build:public
 ```
 

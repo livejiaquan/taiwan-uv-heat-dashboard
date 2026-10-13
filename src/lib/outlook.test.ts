@@ -134,6 +134,13 @@ describe("guidance", () => {
     expect(shareText("臺北市", d, "今天", false)).not.toContain("全天偏熱");
   });
 
+  it("does not describe warning-level heat as low", () => {
+    const d = day(Array.from({ length: 24 }, () => ({ uv: 5, apparent: 35 })));
+    const text = adviceFor(d, "general", "今天").flat().join(" ");
+    expect(text).not.toContain("熱感較低");
+    expect(text).toContain("不要等口渴才喝水");
+  });
+
   it("does not imply ordinary hydration is enough when heat is unknown", () => {
     const d = day(Array.from({ length: 24 }, () => ({ uv: 1 })));
     const text = adviceFor(d, "general", "今天").flat().join(" ");

@@ -5,14 +5,33 @@ import * as fx from "./__fixtures__/cwa";
 afterEach(() => vi.unstubAllGlobals());
 
 describe("Actions data collection", () => {
-  it("publishes an honest unavailable snapshot without a configured secret", async () => {
-    const fetch = vi.fn();
+  it("collects official public files without a private secret", async () => {
+    const fetch = vi.fn().mockImplementation(async (url: string) => ({
+      ok: true,
+      json: async () => ({ cwaopendata: { dataset: url.includes("O-A0003-001") ? fx.observations().records : {} , Dataset: url.includes("F-D0047-089") ? fx.forecast3dNew().records : undefined } }),
+    }));
     vi.stubGlobal("fetch", fetch);
     const snapshot = await collectWeatherSnapshot(undefined, fx.NOW);
-    expect(fetch).not.toHaveBeenCalled();
+    expect(fetch).toHaveBeenCalledTimes(4);
+    expect(fetch.mock.calls.every(([url]) => url.startsWith("https://cwaopendata.s3.ap-northeast-1.amazonaws.com/") && !url.includes("Authorization"))).toBe(true);
+    expect(snapshot.observations.length).toBeGreaterThan(0);
+    expect(snapshot.forecasts.length).toBeGreaterThan(0);
+  });
+
+  it("preserves the deployment when all public files are unavailable", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("outage")));
+    await expect(collectWeatherSnapshot(undefined, fx.NOW)).rejects.toThrow("沒有有效氣象資料");
+  });
+
+  it("rejects an invalid public file envelope while keeping healthy files", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(async (url: string) => ({
+      ok: true,
+      json: async () => url.includes("O-A0003-001") ? fx.observations() : { cwaopendata: { Dataset: url.includes("F-D0047-089") ? fx.forecast3dNew().records : {} } },
+    })));
+    const snapshot = await collectWeatherSnapshot(undefined, fx.NOW);
     expect(snapshot.observations).toEqual([]);
-    expect(snapshot.forecasts).toEqual([]);
-    expect(snapshot.issues.join(" ")).toContain("尚無可用氣象資料");
+    expect(snapshot.forecasts.length).toBeGreaterThan(0);
+    expect(snapshot.issues.join(" ")).toContain("即時觀測讀取失敗");
   });
 
   it("does not overwrite the published snapshot with fabricated data during an upstream outage", async () => {

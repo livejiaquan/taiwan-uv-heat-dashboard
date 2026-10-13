@@ -33,4 +33,5 @@ jobs:
         run: npm test
 
       - name: Build
-        run: npm run collect:weather && npm run build:public
+        # Source requests are tested with fixtures; PR verification is offline.
+        run: npm run build:public

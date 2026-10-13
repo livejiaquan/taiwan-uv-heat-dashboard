@@ -2,7 +2,7 @@ import { mkdir, rename, writeFile } from "node:fs/promises";
 import { collectWeatherSnapshot } from "../src/lib/collection";
 
 try {
-  if (!process.env.CWA_API_KEY) console.log("CWA_API_KEY is not configured; publishing an unavailable state.");
+  console.log(process.env.CWA_API_KEY ? "Collecting from CWA authenticated API." : "Collecting official public CWA files (no private key required).");
   const snapshot = await collectWeatherSnapshot(process.env.CWA_API_KEY);
   await mkdir("public/data", { recursive: true });
   await writeFile("public/data/weather.json.tmp", JSON.stringify(snapshot));
