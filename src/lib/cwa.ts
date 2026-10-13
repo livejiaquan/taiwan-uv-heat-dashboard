@@ -1,6 +1,7 @@
 import { normalizeCountyName } from "../data/counties";
 import { parseForecastPayload } from "./forecast";
-import { asArray, asRecord, toNumber, toText } from "./parse";
+import { asArray, asRecord, boundedNumber, toNumber, toText } from "./parse";
+import { parseCwaTime } from "./time";
 import type { RawCwaBundle, StationObservation } from "./types";
 
 const CWA_BASE = "https://opendata.cwa.gov.tw/api/v1/rest/datastore";
@@ -38,6 +39,11 @@ const findElementValue = (elements: unknown, names: string[]): number | undefine
 const toTaipeiDate = (value?: string): string | undefined =>
   value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T00:00:00+08:00` : value;
 
+const observationTime = (value?: string): string | undefined => {
+  const ms = parseCwaTime(value);
+  return ms === undefined ? undefined : new Date(ms).toISOString();
+};
+
 export const fetchCwaJson = async (dataId: string, apiKey: string): Promise<unknown> => {
   const url = new URL(`${CWA_BASE}/${dataId}`);
   url.searchParams.set("Authorization", apiKey);
@@ -46,12 +52,15 @@ export const fetchCwaJson = async (dataId: string, apiKey: string): Promise<unkn
   const controller = new AbortController();
   const timeout = globalThis.setTimeout(() => controller.abort(), CWA_REQUEST_TIMEOUT_MS);
 
-  let response: Response;
   try {
-    response = await fetch(url.toString(), {
+    const response = await fetch(url.toString(), {
       headers: { Accept: "application/json" },
       signal: controller.signal,
     });
+    if (!response.ok) throw new Error(`${dataId} HTTP ${response.status}`);
+    const json = (await response.json()) as { success?: string | boolean };
+    if (json.success === "false" || json.success === false) throw new Error(`${dataId} returned success=false`);
+    return json;
   } catch (error) {
     if (controller.signal.aborted) throw new Error(`${dataId} request timed out`);
     throw error;
@@ -59,10 +68,6 @@ export const fetchCwaJson = async (dataId: string, apiKey: string): Promise<unkn
     globalThis.clearTimeout(timeout);
   }
 
-  if (!response.ok) throw new Error(`${dataId} HTTP ${response.status}`);
-  const json = (await response.json()) as { success?: string };
-  if (json.success === "false") throw new Error(`${dataId} returned success=false`);
-  return json;
 };
 
 export const parseObservationPayload = (payload: unknown): StationObservation[] => {
@@ -84,11 +89,11 @@ export const parseObservationPayload = (payload: unknown): StationObservation[] 
         stationName: toText(record.StationName) ?? toText(record.stationName) ?? toText(record.locationName) ?? "未知測站",
         county,
         town: toText(geo.TownName) ?? toText(record.TownName),
-        observedAt: toText(obsTime.DateTime) ?? toText(record.DateTime) ?? toText(record.observedAt),
-        temperature: toNumber(weather.AirTemperature) ?? findElementValue(elements, ["AirTemperature", "氣溫"]),
-        humidity: toNumber(weather.RelativeHumidity) ?? findElementValue(elements, ["RelativeHumidity", "相對濕度"]),
-        uvIndex: toNumber(weather.UVIndex) ?? toNumber(weather.UVI) ?? findElementValue(elements, ["UVIndex", "UVI", "紫外線指數"]),
-        windSpeed: toNumber(weather.WindSpeed) ?? findElementValue(elements, ["WindSpeed", "風速"]),
+        observedAt: observationTime(toText(obsTime.DateTime) ?? toText(record.DateTime) ?? toText(record.observedAt)),
+        temperature: boundedNumber(toNumber(weather.AirTemperature) ?? findElementValue(elements, ["AirTemperature", "氣溫"]), -50, 60),
+        humidity: boundedNumber(toNumber(weather.RelativeHumidity) ?? findElementValue(elements, ["RelativeHumidity", "相對濕度"]), 0, 100),
+        uvIndex: boundedNumber(toNumber(weather.UVIndex) ?? toNumber(weather.UVI) ?? findElementValue(elements, ["UVIndex", "UVI", "紫外線指數"]), 0, 30),
+        windSpeed: boundedNumber(toNumber(weather.WindSpeed) ?? findElementValue(elements, ["WindSpeed", "風速"]), 0, 100),
       };
     })
     .filter((item): item is StationObservation => Boolean(item));
@@ -125,11 +130,11 @@ export const parseDailyUvPayload = (
         stationId: stationId ?? "daily-uv",
         stationName: toText(record.StationName) ?? toText(record.stationName) ?? toText(record.locationName) ?? county,
         county,
-        observedAt: toTaipeiDate(toText(record.Date) ?? toText(record.DateTime) ?? toText(record.time) ?? date),
+        observedAt: observationTime(toTaipeiDate(toText(record.Date) ?? toText(record.DateTime) ?? toText(record.time) ?? date)),
         uvIndex:
-          toNumber(record.UVIndex) ??
+          boundedNumber(toNumber(record.UVIndex) ??
           toNumber(record.UVI) ??
-          findElementValue(record.weatherElement, ["UVIndex", "UVI", "紫外線指數"]),
+          findElementValue(record.weatherElement, ["UVIndex", "UVI", "紫外線指數"]), 0, 30),
       };
     })
     .filter((item): item is StationObservation => Boolean(item));
@@ -151,7 +156,9 @@ export const loadCwaBundle = async (apiKey: string): Promise<CwaBundleResult> =>
   results.forEach((result, index) => {
     const key = keys[index];
     if (result.status === "rejected") {
-      issues.push(`${DATASET_LABELS[key]}讀取失敗（${String(result.reason?.message ?? result.reason)}）`);
+      const message = String(result.reason?.message ?? "");
+      const safe = new RegExp(`^${DATASETS[key]} (?:HTTP \\d{3}|request timed out|returned success=false)$`).test(message);
+      issues.push(`${DATASET_LABELS[key]}讀取失敗（${safe ? message : "連線或回應格式異常"}）`);
       return;
     }
     if (!hasUsableData(key, result.value, bundle.observations)) {

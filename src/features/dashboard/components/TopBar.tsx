@@ -36,7 +36,7 @@ export function TopBar({ counties, county, day, hour, mode, compact, onSelectCou
         </div>
         <span className="status-chip">
           <span className={`status-dot ${mode === "live" ? "is-live" : "is-warn"}`} aria-hidden="true" />
-          {mode === "live" ? "氣象署資料" : "示範資料"}
+          {mode === "live" ? "氣象快照" : "示範資料"}
         </span>
         <label className="county-picker">
           <span className="visually-hidden">選擇縣市</span>

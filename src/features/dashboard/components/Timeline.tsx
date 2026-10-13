@@ -322,7 +322,7 @@ export function Timeline({ day, dayWord, hour, nowHour, isNow, centerKey, demo, 
           </span>
           <span className={demo ? "uv-note" : undefined}>
             <i className="band" style={{ background: "var(--uv-2)" }} />
-            {demo ? "方格為逐時紫外線" : "紫外線：現在為測站觀測，其他時段依預報最大值推估"}
+            {demo ? "方格為逐時紫外線" : "紫外線：有效測站觀測優先，其餘依每日最大值推估；缺值留白"}
           </span>
           <span>
             <i className="band" style={{ background: "var(--rain)" }} />

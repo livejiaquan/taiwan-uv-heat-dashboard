@@ -64,6 +64,26 @@ export interface HourPoint {
   rain?: number;
   /** True when this hour carries live station readings instead of forecasts. */
   observed: boolean;
+  uvOrigin?: MetricOrigin;
+  apparentOrigin?: MetricOrigin;
+  temperatureOrigin?: MetricOrigin;
+}
+
+export interface MetricOrigin {
+  kind: "observation" | "forecast" | "estimate";
+  observedAt?: string;
+  stationName?: string;
+  stationId?: string;
+}
+
+/** The only public contract between Actions and Pages. Contains no credentials or request URLs. */
+export interface WeatherSnapshot {
+  schemaVersion: 1;
+  fetchedAt: string;
+  observations: StationObservation[];
+  dailyUv: StationObservation[];
+  forecasts: CountyForecast[];
+  issues: string[];
 }
 
 export interface DayOutlook {

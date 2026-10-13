@@ -8,6 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "test": "vitest run",
+    "collect:weather": "node --env-file-if-exists=.env.local --import tsx scripts/collect-weather.ts",
+    "build:public": "node scripts/build-public.mjs",
     "typecheck": "tsc -b",
     "preview": "vite preview --host 0.0.0.0"
   },
@@ -25,9 +27,13 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
+    "tsx": "^4.23.15",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
     "vite": "^7.2.4",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.11"
+  },
+  "engines": {
+    "node": ">=22.14.0"
   }
 }

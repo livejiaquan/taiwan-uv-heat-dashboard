@@ -14,6 +14,11 @@ export const toNumber = (value: unknown): number | undefined => {
 export const toText = (value: unknown): string | undefined =>
   typeof value === "string" && value.trim() ? value.trim() : undefined;
 
+export const boundedNumber = (value: unknown, min: number, max: number): number | undefined => {
+  const number = toNumber(value);
+  return number !== undefined && number >= min && number <= max ? number : undefined;
+};
+
 export const asRecord = (value: unknown): Record<string, unknown> =>
   value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
 

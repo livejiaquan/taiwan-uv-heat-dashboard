@@ -112,6 +112,35 @@ describe("live outlook", () => {
 });
 
 describe("guidance", () => {
+  it.each([{ apparent: 25 }, { uv: 1 }, { uv: 0 }])("does not endorse outdoor activity with a missing metric: %j", (point) => {
+    const d = day(Array.from({ length: 24 }, () => point));
+    for (const hour of [6, 12, 18]) {
+      const v = verdictFor(d, hour, "今天", 350);
+      expect(v.title).toContain("資料不足");
+      expect(v.lede).not.toMatch(/都在舒適範圍|不需要防曬|適合.*運動/);
+    }
+  });
+
+  it("keeps a warning for a known high risk when another metric is missing", () => {
+    const v = verdictFor(day(Array.from({ length: 24 }, () => ({ uv: 9 }))), 12, "今天", 350);
+    expect(v.title).toContain("不建議");
+    expect(v.lede).toContain("體感溫度資料不足");
+  });
+
+  it("does not infer a whole-day absence of risk from one known hour", () => {
+    const d = day([{ uv: 0, apparent: 25 }]);
+    expect(verdictFor(d, 0, "今天", 350).protectText).toContain("資料不足");
+    expect(shareText("臺北市", d, "今天", false)).toContain("資料不足");
+    expect(shareText("臺北市", d, "今天", false)).not.toContain("全天偏熱");
+  });
+
+  it("does not imply ordinary hydration is enough when heat is unknown", () => {
+    const d = day(Array.from({ length: 24 }, () => ({ uv: 1 })));
+    const text = adviceFor(d, "general", "今天").flat().join(" ");
+    expect(text).not.toContain("一般補水即可");
+    expect(text).toContain("體感溫度資料不足");
+  });
+
   it("says so when an hour has no data at all", () => {
     const v = verdictFor(day([]), 13, "今天", 350);
     expect(v.title).toBe("這個時段資料不足");
@@ -129,7 +158,7 @@ describe("guidance", () => {
   it("warns at high UV even when the heat is mild", () => {
     const d = day(Array.from({ length: 24 }, (_, h) => ({ uv: h === 12 ? 9 : 0, apparent: 25 })));
     const v = verdictFor(d, 12, "今天", 350);
-    expect(v.title).toBe("現在不建議長時間在戶外");
+    expect(v.title).toBe("這個時段不建議長時間在戶外");
     expect(v.lede).toContain("約 26 分鐘就會曬紅");
   });
 
@@ -138,7 +167,7 @@ describe("guidance", () => {
     const uv = [0, 0, 0, 0, 0, 0, 1, 2, 4, 6, 8, 9, 9, 8, 6, 4, 2, 1, 0, 0, 0, 0, 0, 0];
     const facts = factsFor(day(apparent.map((a, i) => ({ apparent: a, uv: uv[i] }))));
     expect(facts.peakHour).toBe(12);
-    expect(facts.exercise).toEqual(["08 時前", "17 時後"]);
+    expect(facts.exercise).toEqual(["05–08 時", "17–22 時"]);
     expect(facts.protect).toEqual([[8, 15]]);
   });
 

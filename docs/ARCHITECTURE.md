@@ -1,50 +1,25 @@
 # Architecture
 
-A client-only React app. CWA payloads are fetched in the browser, normalised into an hourly outlook per county, and rendered by a single dashboard feature.
-
-## Directory layout
+A static React application, with GitHub Actions as the weather collection boundary. The same parsers are used in collection tests and the Actions collector; browser requests never carry CWA credentials.
 
 ```text
-src/
-  App.tsx                     Loading / error / dashboard shell
-  styles.css                  Design tokens (light + dark) and all component styles
-  data/
-    counties.ts               County metadata and name normalisation (台/臺)
-    demo.ts                   Demo scenario used without an API key
-    taiwan-map.json           Pre-projected county outlines (scripts/build-taiwan-map.mjs)
-  lib/                        No React imports
-    cwa.ts                    Fetching, dataset loading, observation + daily UV parsers
-    forecast.ts               F-D0047 / F-C0032 parsers (current and older field names)
-    outlook.ts                Builds the per-county, per-hour DayOutlook for today and tomorrow
-    levels.ts                 UV and apparent-temperature levels, CWA apparent-temperature formula
-    guidance.ts               Verdict, time windows, packing list, audience advice, share text
-    load.ts                   Live vs demo decision
-    time.ts                   Asia/Taipei date and hour helpers
-  features/dashboard/
-    Dashboard.tsx             Page state: county, day, hour, audience, skin type, metric
-    useDashboardData.ts       Loading, 10-minute auto refresh, keeps last live data on failure
-    useNow.ts                 Minute clock so "now" stays current
-    components/               TopBar, StatusLine, Verdict, Timeline, Advice, National, Footer
+Actions Secret CWA_API_KEY
+  → cwa.ts / forecast.ts (source requests and parsing)
+  → snapshot.ts (normalized versioned JSON)
+  → public/data/weather.json → GitHub Pages
+  → load.ts (same-origin fetch and schema validation)
+  → outlook.ts (current-time validity, county/hour values and metric origins)
+  → Dashboard → guidance.ts (only supported conclusions)
 ```
 
-## Data flow
+`scripts/collect-weather.ts` writes the snapshot atomically only after validation. On a complete upstream outage the job fails before building/uploading, preserving the deployed artifact. `scripts/build-public.mjs` runs the build with a credential environment guard and scans its output. The key is supplied to collection only, never to the build step.
 
-```text
-CWA datasets ──► cwa.ts / forecast.ts ──► outlook.ts ──► DashboardData
-                                                         │
-demo.ts (no key / all sources down) ─────────────────────┘
-                                                         ▼
-                                    Dashboard ──► guidance.ts for every visible sentence
-```
+`useDashboardData.ts` retains the normalized snapshot on refresh failure and recomputes the outlook every minute. The original `fetchedAt` does not change when the browser recomputes it. Observations expire at 45 minutes, the snapshot expires at two hours, and Taipei days roll over at midnight. `HourPoint` records UV, apparent-temperature, and air-temperature provenance separately; observed source labels use the contributing station's timestamp rather than a county/global newest unrelated station.
 
-Each `DayOutlook` holds 24 `HourPoint`s. For today's current hour the values come from fresh station observations; other hours come from forecasts. Missing values stay `undefined` all the way to the UI, which shows "資料不足" instead of treating them as low risk.
+Missing metrics remain `undefined`. Incomplete data cannot produce a positive outdoor verdict; known high risk still produces a warning. Daily gaps cannot be interpreted as a low-risk whole day, and exercise intervals use consecutive known lower-risk hours only. Estimated hourly UV is labelled as the site's estimate, not an official hourly forecast.
 
-## Interaction model
+`?demo=1` explicitly selects synthetic data. Normal mode never falls back to demo on missing credentials or network failure. The app shell offers official information and a clearly labelled link to demo when no snapshot can be loaded.
 
-- Today follows the clock until the reader picks another hour; "回到現在" returns to following it.
-- The timeline is an ARIA slider (arrow keys, Home/End), drag with a mouse, tap on touch screens. On narrow screens it scrolls horizontally with a pinned y-axis.
-- County, skin type are remembered in `localStorage` when available.
+## Verification
 
-## Tests
-
-`src/lib/*.test.ts` cover the parsers against fixtures in both CWA field-naming generations, the outlook builder (observations vs forecasts, interpolation, stale readings), and the guidance text for every county, day, hour and audience.
+Vitest covers source parsing, normalized snapshot validation, missing/partial data, per-metric sources, expiry, future timestamps, midnight rollover, collection failures/redaction, and built-asset credential scanning. Browser checks cover rendered demo/unavailable/partial/expired states and responsive layout. CI runs tests, lint, typecheck, no-key collection, and the guarded public build. Deployment repeats validation before uploading a Pages artifact.
