@@ -1,47 +1,34 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { buildDemoDashboard } from "../../data/demo";
 import { loadDashboardData } from "../../lib/load";
-import type { DashboardData } from "../../lib/types";
+import { buildSnapshotDashboard } from "../../lib/outlook";
+import type { WeatherSnapshot } from "../../lib/types";
+import { useNow } from "./useNow";
 
-const apiKey = (import.meta.env.VITE_CWA_API_KEY as string | undefined) || undefined;
 const AUTO_REFRESH_MS = 10 * 60 * 1000;
 
-type Status = "loading" | "ready" | "error";
-
-// A refresh that falls back to demo data must not replace real readings that
-// are already on screen; keep them and say why instead.
-const keepLiveData = (previous: DashboardData | null, next: DashboardData): DashboardData => {
-  if (previous?.mode !== "live" || next.mode !== "demo") return next;
-  return {
-    ...previous,
-    stale: true,
-    issues: [...next.issues.filter((issue) => !issue.includes("示範資料")), "重新整理失敗，畫面保留上一次成功載入的資料。"],
-  };
-};
-
-export function useDashboardData() {
-  const [status, setStatus] = useState<Status>("loading");
-  const [data, setData] = useState<DashboardData | null>(null);
+export function useDashboardData(demo = false) {
+  const now = useNow();
+  const [snapshot, setSnapshot] = useState<WeatherSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const requestId = useRef(0);
-  const latest = useRef<DashboardData | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(() => {
     const id = ++requestId.current;
-    try {
-      const next = keepLiveData(latest.current, await loadDashboardData(apiKey));
-      if (id !== requestId.current) return;
-      latest.current = next;
-      setData(next);
-      setError(null);
-      setStatus("ready");
-    } catch (reason) {
-      if (id !== requestId.current) return;
-      setError(reason instanceof Error ? reason.message : String(reason));
-      if (!latest.current) setStatus("error");
-    } finally {
+    return loadDashboardData().then(
+      (next) => {
+        if (id !== requestId.current) return;
+        setSnapshot(next);
+        setError(null);
+      },
+      (reason: unknown) => {
+        if (id !== requestId.current) return;
+        setError(reason instanceof Error ? reason.message : "氣象資料讀取失敗。");
+      },
+    ).finally(() => {
       if (id === requestId.current) setRefreshing(false);
-    }
+    });
   }, []);
 
   const refresh = useCallback(async () => {
@@ -50,18 +37,25 @@ export function useDashboardData() {
   }, [load]);
 
   useEffect(() => {
+    if (demo) return;
     void load();
-    const timer = apiKey
-      ? window.setInterval(() => {
-          if (!document.hidden) void refresh();
-        }, AUTO_REFRESH_MS)
-      : undefined;
+    const timer = window.setInterval(() => { if (!document.hidden) void refresh(); }, AUTO_REFRESH_MS);
+    const onVisible = () => { if (!document.hidden) void refresh(); };
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
-      // Invalidate in-flight requests so they cannot update an unmounted tree.
       requestId.current += 1;
-      if (timer !== undefined) window.clearInterval(timer);
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [load, refresh]);
+  }, [demo, load, refresh]);
 
-  return { status, data, error, refreshing, refresh };
+  const data = useMemo(() => {
+    if (demo) return buildDemoDashboard([], now);
+    if (!snapshot) return null;
+    const result = buildSnapshotDashboard(snapshot, now);
+    return error ? { ...result, issues: [...result.issues, "重新整理失敗，保留先前快照並持續檢查有效時間。"] } : result;
+  }, [demo, snapshot, now, error]);
+
+  const status = data ? "ready" : error ? "error" : "loading";
+  return { status, data, error, refreshing, refresh, now };
 }
