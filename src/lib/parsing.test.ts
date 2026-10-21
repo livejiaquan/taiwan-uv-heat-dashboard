@@ -159,6 +159,21 @@ describe("CWA requests", () => {
     expect(issues).toEqual(["36 小時預報讀取失敗（F-C0032-001 HTTP 503）", "一週預報沒有可用資料"]);
   });
 
+  it("rejects daily UV rows that cannot be mapped to a county", async () => {
+    const dailyUv = fx.dailyUv();
+    dailyUv.records.weatherElement.location = [{ StationID: "unmapped", UVIndex: 12 }];
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(async (url: string) => ({
+      ok: true,
+      json: async () => url.includes("O-A0003-001") ? fx.observations()
+        : url.includes("O-A0005-001") ? dailyUv
+          : url.includes("F-D0047-089") ? fx.forecast3dNew() : {},
+    })));
+    const { bundle, issues } = await loadCwaBundle("key");
+    expect(bundle.dailyUv).toBeUndefined();
+    expect(issues).toContain("每日紫外線最大值沒有可用資料");
+    expect(bundle.forecast3d).toBeDefined();
+  });
+
   it("drops daily UV when observations are missing", async () => {
     vi.stubGlobal(
       "fetch",
