@@ -193,6 +193,9 @@ export const loadCwaBundle = async (apiKey?: string): Promise<CwaBundleResult> =
   if (bundle.dailyUv && !bundle.observations) {
     delete bundle.dailyUv;
     issues.push("每日紫外線最大值缺少測站對照，暫不使用");
+  } else if (bundle.dailyUv && !parseDailyUvPayload(bundle.dailyUv, stationCountyMap(bundle.observations)).some((s) => s.uvIndex !== undefined)) {
+    delete bundle.dailyUv;
+    issues.push("每日紫外線最大值沒有可用資料");
   }
 
   const usable = Boolean(bundle.observations || bundle.forecast3d || bundle.forecastWeek || bundle.forecast36h);
