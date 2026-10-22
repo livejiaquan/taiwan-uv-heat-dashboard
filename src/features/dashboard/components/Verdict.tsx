@@ -277,7 +277,8 @@ function DayBar(props: { day: DayOutlook; hour: number; nowHour: number | null; 
             <b className="daybar-marker" style={{ left: marker }}>
               {nowHour === hour ? "現在" : `${pad2(hour)} 時`}
             </b>
-            {[0, 6, 12, 18].map((t) => (
+            {/* Axis ticks give way to the marker when they would overlap it. */}
+            {[0, 6, 12, 18].filter((t) => Math.abs(t - (hour + 0.5)) >= 2.5).map((t) => (
               <small key={t} style={{ left: `${(t / 24) * 100}%` }}>
                 {pad2(t)}
               </small>
