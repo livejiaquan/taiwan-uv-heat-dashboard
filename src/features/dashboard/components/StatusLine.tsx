@@ -24,16 +24,16 @@ export function StatusLine({ data, county, now, refreshing, onRefresh }: StatusL
     <div className={`status-line is-${state}`} role="status">
       <span className="status-badge">
         <span className="status-dot" aria-hidden="true" />
-        {state === "demo" ? "示範資料" : state === "late" ? "更新延遲" : "資料最新"}
+        {state === "demo" ? "示範資料" : `${state === "late" ? "更新延遲" : "資料最新"}・${formatRelativeAge(data.generatedAt, now)}`}
       </span>
       <span className="status-text">
         {live ? (
           <>
-            {`快照 ${formatClock(data.generatedAt)} 更新（${formatRelativeAge(data.generatedAt, now)}）`}
-            <span className="status-sep" aria-hidden="true">・</span>
-            {`有效至 ${formatClock(validUntil).slice(-5)}`}
-            <span className="status-sep" aria-hidden="true">・</span>
-            {`${county.county}${county.observedAt ? "有有效測站觀測，各指標時間見下方" : "目前沒有有效即時觀測"}`}
+            {`快照 ${formatClock(data.generatedAt)} 更新・有效至 ${formatClock(validUntil).slice(-5)}`}
+            <span className="status-detail">
+              <span className="status-sep" aria-hidden="true">・</span>
+              {`${county.county}${county.observedAt ? "有有效測站觀測" : "目前沒有有效即時觀測"}`}
+            </span>
           </>
         ) : (
           "數值為示範情境，不代表實際天氣"
