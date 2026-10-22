@@ -1,6 +1,12 @@
+import { BrandMark } from "./BrandMark";
+
 export function Footer() {
   return (
     <footer>
+      <p className="foot-brand">
+        <BrandMark />
+        台灣曬熱指南
+      </p>
       <p>
         資料來源：中央氣象署開放資料平臺，包括 O-A0003-001 局屬測站即時觀測、O-A0005-001 每日紫外線最大值、
         F-D0047-089 縣市 3 天天氣預報、F-D0047-091 縣市一週預報。
