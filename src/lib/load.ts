@@ -10,7 +10,10 @@ export const loadDashboardData = async (): Promise<WeatherSnapshot> => {
   try {
     const response = await fetch(`${import.meta.env.BASE_URL}data/weather.json`, { cache: "no-store", signal: controller.signal });
     if (!response.ok) throw new Error("目前無法取得氣象資料快照，請稍後再試。");
-    return parseWeatherSnapshot(await response.json());
+    const body: unknown = await response.json().catch(() => {
+      throw new Error("氣象資料快照格式錯誤，請稍後再試。");
+    });
+    return parseWeatherSnapshot(body);
   } catch (error) {
     if (controller.signal.aborted) throw new Error("氣象資料讀取逾時，請稍後再試。");
     throw error;

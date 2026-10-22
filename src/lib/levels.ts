@@ -2,15 +2,17 @@ export interface Level {
   name: string;
   short: string;
   max: number;
+  /** One concrete thing to do at this level. */
+  action: string;
 }
 
 /** CWA five-level UV scale (WHO categories). */
 export const UV_LEVELS: Level[] = [
-  { name: "低量級", short: "低量", max: 2 },
-  { name: "中量級", short: "中量", max: 5 },
-  { name: "高量級", short: "高量", max: 7 },
-  { name: "過量級", short: "過量", max: 10 },
-  { name: "危險級", short: "危險", max: Infinity },
+  { name: "低量級", short: "低量", max: 2, action: "一般不需特別防護，晴天可戴太陽眼鏡" },
+  { name: "中量級", short: "中量", max: 5, action: "長時間在戶外要擦防曬、戴帽子" },
+  { name: "高量級", short: "高量", max: 7, action: "擦 SPF 30 以上防曬，正午盡量待在陰涼處" },
+  { name: "過量級", short: "過量", max: 10, action: "避免正午曝曬，撐傘、穿長袖、戴太陽眼鏡" },
+  { name: "危險級", short: "危險", max: Infinity, action: "盡量不要曝曬，外出務必全套防護" },
 ];
 
 /**
@@ -18,11 +20,11 @@ export const UV_LEVELS: Level[] = [
  * thresholds, not an official CWA or Ministry of Labor classification.
  */
 export const HEAT_LEVELS: Level[] = [
-  { name: "舒適", short: "舒適", max: 27 },
-  { name: "留意", short: "留意", max: 31 },
-  { name: "警戒", short: "警戒", max: 35 },
-  { name: "危險", short: "危險", max: 39 },
-  { name: "極危險", short: "極危險", max: Infinity },
+  { name: "舒適", short: "舒適", max: 27, action: "正常活動，記得適時喝水" },
+  { name: "留意", short: "留意", max: 31, action: "活動時隨身帶水，留意身體狀況" },
+  { name: "警戒", short: "警戒", max: 35, action: "放慢節奏，每 15 到 20 分鐘補水" },
+  { name: "危險", short: "危險", max: 39, action: "減少戶外活動，到陰涼處休息降溫" },
+  { name: "極危險", short: "極危險", max: Infinity, action: "避免戶外活動，留意頭暈、噁心等中暑徵兆" },
 ];
 
 const levelOf = (levels: Level[], value?: number): number =>
