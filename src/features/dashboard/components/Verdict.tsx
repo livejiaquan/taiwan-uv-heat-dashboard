@@ -42,6 +42,7 @@ interface VerdictProps {
 
 export function Verdict(props: VerdictProps) {
   const { sectionRef, titleRef, county, day, dayIndex, dayWord, hour, isNow, nowHour = null, skin, demo, onSkin, onDay } = props;
+  const [ledeOpen, setLedeOpen] = useState(false);
   const med = SKIN_TYPES[skin].med;
   const verdict = verdictFor(day, hour, dayWord, med);
   const facts = factsFor(day);
@@ -100,10 +101,16 @@ export function Verdict(props: VerdictProps) {
           <h1 id="v-title" ref={titleRef}>
             {verdict.title}
           </h1>
-          <p className="verdict-lede">{verdict.lede}</p>
+          <p id="v-lede" className={`verdict-lede${ledeOpen ? " is-open" : ""}`}>{verdict.lede}</p>
+          {verdict.lede.length > 36 ? (
+            <button className="lede-more" type="button" aria-expanded={ledeOpen} aria-controls="v-lede" onClick={() => setLedeOpen((open) => !open)}>
+              {ledeOpen ? "收合說明" : "看完整說明"}
+            </button>
+          ) : null}
         </div>
-        <DayBar day={day} hour={hour} nowHour={nowHour} protect={verdict.protectText} hot={facts.hot} />
       </div>
+
+      <DayBar day={day} dayWord={dayWord} hour={hour} nowHour={nowHour} protect={verdict.protectText} hot={facts.hot} />
 
       <div className="meters">
         <div className="meter">
@@ -114,7 +121,6 @@ export function Verdict(props: VerdictProps) {
           <MeterValue value={verdict.uv} level={verdict.uvIndex} levels={UV_LEVELS} color={uvColor} ink={uvInk} />
           <Gauge value={verdict.uv} scale={UV_SCALE} levels={UV_LEVELS} level={verdict.uvIndex} color={uvColor} />
           <p className="meter-action">{verdict.uvIndex < 0 ? "資料不足，請查中央氣象署" : UV_LEVELS[verdict.uvIndex].action}</p>
-          {!demo ? <p className="source-note">{sourceText(point?.uvOrigin)}</p> : null}
         </div>
         <div className="meter">
           <div className="meter-head">
@@ -131,49 +137,54 @@ export function Verdict(props: VerdictProps) {
           />
           <Gauge value={verdict.apparent} scale={HEAT_SCALE} levels={HEAT_LEVELS} level={verdict.heatIndex} color={heatColor} />
           <p className="meter-action">{verdict.heatIndex < 0 ? "資料不足，請查中央氣象署" : HEAT_LEVELS[verdict.heatIndex].action}</p>
-          {!demo ? <>
-            <p className="source-note">體感：{sourceText(point?.apparentOrigin)}</p>
-            <p className="source-note">氣溫：{sourceText(point?.temperatureOrigin)}</p>
-          </> : null}
         </div>
-        <div className="burn">
-          <div className="burn-row">
-            <label htmlFor="skin-select">你的膚質</label>
-            <select id="skin-select" value={skin} onChange={(event) => onSkin(Number(event.target.value))}>
-              {SKIN_TYPES.map((type, index) => (
-                <option key={type.label} value={index}>
-                  {type.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <BurnText day={day} hour={hour} dayWord={dayWord} med={med} />
-        </div>
+        {!demo ? (
+          <details className="sources">
+            <summary>這些數值從哪裡來</summary>
+            <dl>
+              <div><dt>紫外線</dt><dd>{sourceText(point?.uvOrigin)}</dd></div>
+              <div><dt>體感</dt><dd>{sourceText(point?.apparentOrigin)}</dd></div>
+              <div><dt>氣溫</dt><dd>{sourceText(point?.temperatureOrigin)}</dd></div>
+            </dl>
+          </details>
+        ) : null}
       </div>
 
-      <div className="v-body">
-        <dl className="facts">
-          <div className="fact">
-            <dt>需要防曬</dt>
-            <dd>{verdict.protectText}</dd>
-          </div>
-          <div className="fact">
-            <dt>已知最高體感</dt>
-            <dd>
-              {facts.peakHour === undefined || day.apparentMax === undefined
-                ? "--"
-                : `${pad2(facts.peakHour)} 時 · ${Math.round(day.apparentMax)}°`}
-            </dd>
-          </div>
-          <div className="fact">
-            <dt>適合運動</dt>
-            <dd>
-              {facts.exercise.length ? facts.exercise.join("、") : "無法確認"}
-            </dd>
-          </div>
-        </dl>
-        <PackList key={`${county.county}-${day.date}`} county={county.county} day={day} dayWord={dayWord} demo={demo} />
+      <div className="burn">
+        <div className="burn-row">
+          <label htmlFor="skin-select">你的膚質</label>
+          <select id="skin-select" value={skin} onChange={(event) => onSkin(Number(event.target.value))}>
+            {SKIN_TYPES.map((type, index) => (
+              <option key={type.label} value={index}>
+                {type.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <BurnText day={day} hour={hour} dayWord={dayWord} med={med} />
       </div>
+
+      <dl className="facts">
+        <div className="fact">
+          <dt>需要防曬</dt>
+          <dd>{verdict.protectText}</dd>
+        </div>
+        <div className="fact">
+          <dt>已知最高體感</dt>
+          <dd>
+            {facts.peakHour === undefined || day.apparentMax === undefined
+              ? "--"
+              : `${pad2(facts.peakHour)} 時 · ${Math.round(day.apparentMax)}°`}
+          </dd>
+        </div>
+        <div className="fact">
+          <dt>適合運動</dt>
+          <dd>
+            {facts.exercise.length ? facts.exercise.join("、") : "無法確認"}
+          </dd>
+        </div>
+      </dl>
+      <PackList key={`${county.county}-${day.date}`} county={county.county} day={day} dayWord={dayWord} demo={demo} />
     </section>
   );
 }
@@ -200,7 +211,7 @@ function MeterValue(props: {
 
 /** Level boundaries on each gauge, halfway between the rounded values that change level. */
 const UV_SCALE = [0, 2.5, 5.5, 7.5, 10.5, 12];
-const HEAT_SCALE = [20, 27.5, 31.5, 35.5, 39.5, 42];
+const HEAT_SCALE = [20, 27.5, 31.5, 35.5, 39.5, 44];
 
 /**
  * A banded bar with a dot at the reading, so position and label carry the level
@@ -237,8 +248,8 @@ function Gauge(props: { value?: number; scale: number[]; levels: Level[]; level:
  * The whole day at a glance: hours that need sun protection and hours that are
  * hot, with the selected hour marked. Missing hours are hatched, not left blank.
  */
-function DayBar(props: { day: DayOutlook; hour: number; nowHour: number | null; protect: string; hot: HourRange[] }) {
-  const { day, hour, nowHour, protect, hot } = props;
+function DayBar(props: { day: DayOutlook; dayWord: string; hour: number; nowHour: number | null; protect: string; hot: HourRange[] }) {
+  const { day, dayWord, hour, nowHour, protect, hot } = props;
   const rows: Array<{ key: string; label: string; cell: (h: DayOutlook["hours"][number]) => string | null | undefined }> = [
     { key: "uv", label: "防曬", cell: (h) => (h.uv === undefined ? undefined : h.uv >= 3 ? uvColor(uvLevel(h.uv)) : null) },
     {
@@ -250,6 +261,7 @@ function DayBar(props: { day: DayOutlook; hour: number; nowHour: number | null; 
   const marker = `calc(${((hour + 0.5) / 24) * 100}%)`;
   return (
     <figure className="daybar">
+      <span className="daybar-title" aria-hidden="true">{`${dayWord}的防曬與高溫時段`}</span>
       <figcaption className="visually-hidden">
         {`需要防曬：${protect}。體感 32 度以上：${hot.length ? formatRanges(hot) : "無或資料不足"}。`}
       </figcaption>
@@ -278,7 +290,7 @@ function DayBar(props: { day: DayOutlook; hour: number; nowHour: number | null; 
               {nowHour === hour ? "現在" : `${pad2(hour)} 時`}
             </b>
             {/* Axis ticks give way to the marker when they would overlap it. */}
-            {[0, 6, 12, 18].filter((t) => Math.abs(t - (hour + 0.5)) >= 2.5).map((t) => (
+            {[0, 6, 12, 18].filter((t) => Math.abs(t - (hour + 0.5)) >= 3.5).map((t) => (
               <small key={t} style={{ left: `${(t / 24) * 100}%` }}>
                 {pad2(t)}
               </small>
@@ -302,7 +314,7 @@ function BurnText({ day, hour, dayWord, med }: { day: DayOutlook; hour: number; 
       </>
     );
   };
-  const note = <span style={{ fontWeight: 400, color: "var(--muted)" }}>（未擦防曬的估算）</span>;
+  const note = <span className="burn-note">（未擦防曬的估算）</span>;
 
   if (uv !== undefined && uv > 0) {
     return (

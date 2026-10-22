@@ -100,14 +100,14 @@ export function Timeline({ day, dayWord, hour, nowHour, isNow, centerKey, demo, 
   const axis = (
     <>
       {TICKS.map((t) => (
-        <text key={t} x={scroll ? 26 : padL - 6} y={y(t) + 4} textAnchor="end" fontSize={11} fill="var(--muted)" fontFamily="var(--font-num)">
+        <text key={t} x={scroll ? 26 : padL - 6} y={y(t) + 4} textAnchor="end" fontSize={12} fill="var(--muted)" fontFamily="var(--font-num)">
           {t}°
         </text>
       ))}
-      <text x={scroll ? 26 : padL - 6} y={stripY + stripH / 2 + 4} textAnchor="end" fontSize={11} fill="var(--muted)" fontFamily="var(--font-num)">
+      <text x={scroll ? 26 : padL - 6} y={stripY + stripH / 2 + 4} textAnchor="end" fontSize={12} fill="var(--muted)" fontFamily="var(--font-num)">
         UV
       </text>
-      <text x={scroll ? 26 : padL - 6} y={rainY + rainH - 1} textAnchor="end" fontSize={10} fill="var(--muted)">
+      <text x={scroll ? 26 : padL - 6} y={rainY + rainH - 1} textAnchor="end" fontSize={12} fill="var(--muted)">
         雨
       </text>
     </>
@@ -206,7 +206,7 @@ export function Timeline({ day, dayWord, hour, nowHour, isNow, centerKey, demo, 
                 x={cx(i)}
                 y={y(h.apparent) - 9}
                 textAnchor="middle"
-                fontSize={10.5}
+                fontSize={12}
                 fill={i === hour ? "var(--ink)" : "var(--muted)"}
                 fontWeight={i === hour ? 700 : 500}
                 fontFamily="var(--font-num)"
@@ -219,7 +219,7 @@ export function Timeline({ day, dayWord, hour, nowHour, isNow, centerKey, demo, 
       {point?.apparent !== undefined ? (
         <circle cx={cx(hour)} cy={y(point.apparent)} r={5} fill="var(--surface)" stroke="var(--ink)" strokeWidth={2} />
       ) : null}
-      <text x={labelX} y={top - 14} textAnchor={anchor} fontSize={12.5} fontWeight={600} fill="var(--ink)" fontFamily="var(--font-num)">
+      <text x={labelX} y={top - 14} textAnchor={anchor} fontSize={14} fontWeight={600} fill="var(--ink)" fontFamily="var(--font-num)">
         {label}
       </text>
 
@@ -236,7 +236,7 @@ export function Timeline({ day, dayWord, hour, nowHour, isNow, centerKey, demo, 
               fill={h.uv === undefined || h.uv === 0 ? "var(--surface-2)" : uvColor(level)}
             />
             {h.uv !== undefined && h.uv > 0 && colW >= 15 ? (
-              <text x={cx(i)} y={stripY + stripH / 2 + 4} textAnchor="middle" fontSize={11.5} fontWeight={600} fill={uvInk(level)} fontFamily="var(--font-num)">
+              <text x={cx(i)} y={stripY + stripH / 2 + 4} textAnchor="middle" fontSize={12} fontWeight={600} fill={uvInk(level)} fontFamily="var(--font-num)">
                 {Math.round(h.uv)}
               </text>
             ) : null}
@@ -265,7 +265,7 @@ export function Timeline({ day, dayWord, hour, nowHour, isNow, centerKey, demo, 
             x={cx(i)}
             y={H - 6}
             textAnchor="middle"
-            fontSize={scroll ? 10.5 : 11}
+            fontSize={12}
             fill={i === hour ? "var(--ink)" : "var(--muted)"}
             fontWeight={i === hour ? 700 : 400}
             fontFamily="var(--font-num)"
@@ -274,9 +274,7 @@ export function Timeline({ day, dayWord, hour, nowHour, isNow, centerKey, demo, 
           </text>
         ))}
       {nowHour !== null ? (
-        <text x={cx(nowHour)} y={rainY + rainH + 10} textAnchor="middle" fontSize={9} fill="var(--accent)" fontWeight={700}>
-          ▲
-        </text>
+        <path d={`M${cx(nowHour)},${rainY + rainH + 3} l4,6 h-8 z`} fill="var(--accent)" />
       ) : null}
     </svg>
   ) : null;
