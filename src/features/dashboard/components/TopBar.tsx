@@ -1,5 +1,5 @@
 import { heatColor, heatInk, heatLevel, uvColor, uvInk, uvLevel } from "../../../lib/levels";
-import type { CountyOutlook, DataMode, DayOutlook } from "../../../lib/types";
+import type { CountyOutlook, DayOutlook } from "../../../lib/types";
 import { BrandMark } from "./BrandMark";
 
 interface TopBarProps {
@@ -7,13 +7,12 @@ interface TopBarProps {
   county: CountyOutlook;
   day: DayOutlook;
   hour: number;
-  mode: DataMode;
   /** True once the verdict has scrolled away; the brand gives way to a summary. */
   compact: boolean;
   onSelectCounty: (name: string) => void;
 }
 
-export function TopBar({ counties, county, day, hour, mode, compact, onSelectCounty }: TopBarProps) {
+export function TopBar({ counties, county, day, hour, compact, onSelectCounty }: TopBarProps) {
   const point = day.hours[hour];
   const ul = uvLevel(point?.uv);
   const tl = heatLevel(point?.apparent);
@@ -34,10 +33,6 @@ export function TopBar({ counties, county, day, hour, mode, compact, onSelectCou
             </span>
           </span>
         </div>
-        <span className="status-chip">
-          <span className={`status-dot ${mode === "live" ? "is-live" : "is-warn"}`} aria-hidden="true" />
-          {mode === "live" ? "氣象快照" : "示範資料"}
-        </span>
         <label className="county-picker">
           <span className="visually-hidden">選擇縣市</span>
           <select value={county.county} onChange={(event) => onSelectCounty(event.target.value)}>
