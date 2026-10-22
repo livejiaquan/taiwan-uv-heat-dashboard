@@ -100,7 +100,6 @@ export function Dashboard({ data, now, refreshing, onRefresh }: DashboardProps) 
         county={county}
         day={day}
         hour={hour}
-        mode={data.mode}
         compact={compactHeader}
         onSelectCounty={selectCounty}
       />
@@ -116,6 +115,7 @@ export function Dashboard({ data, now, refreshing, onRefresh }: DashboardProps) 
             dayWord={dayWord}
             hour={hour}
             isNow={isNow}
+            nowHour={dayIndex === 0 ? nowHour : null}
             skin={skin}
             demo={data.mode === "demo"}
             onSkin={changeSkin}

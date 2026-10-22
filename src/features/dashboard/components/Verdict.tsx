@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
-import { factsFor, packFor, shareText, verdictFor } from "../../../lib/guidance";
+import { factsFor, formatRanges, packFor, shareText, verdictFor, type HourRange } from "../../../lib/guidance";
 import {
   HEAT_LEVELS,
   SKIN_TYPES,
@@ -8,8 +8,10 @@ import {
   heatAlertFor,
   heatColor,
   heatInk,
+  heatLevel,
   uvColor,
   uvInk,
+  uvLevel,
   type Level,
 } from "../../../lib/levels";
 import { formatClock, pad2 } from "../../../lib/time";
@@ -30,6 +32,8 @@ interface VerdictProps {
   dayWord: string;
   hour: number;
   isNow: boolean;
+  /** Current hour when showing today, otherwise null. */
+  nowHour?: number | null;
   skin: number;
   demo: boolean;
   onSkin: (skin: number) => void;
@@ -37,16 +41,29 @@ interface VerdictProps {
 }
 
 export function Verdict(props: VerdictProps) {
-  const { sectionRef, titleRef, county, day, dayIndex, dayWord, hour, isNow, skin, demo, onSkin, onDay } = props;
+  const { sectionRef, titleRef, county, day, dayIndex, dayWord, hour, isNow, nowHour = null, skin, demo, onSkin, onDay } = props;
   const med = SKIN_TYPES[skin].med;
   const verdict = verdictFor(day, hour, dayWord, med);
   const facts = factsFor(day);
   const point = day.hours[hour];
   const alert = heatAlertFor(day.airMax);
   const uvSource = point?.uv === undefined || demo ? "" : point.uvOrigin?.kind === "observation" ? "測站觀測" : "本站推估";
+  // The card takes the colour of whichever reading is more severe right now.
+  const risk =
+    verdict.uvIndex < 0 && verdict.heatIndex < 0
+      ? "var(--missing)"
+      : verdict.uvIndex >= verdict.heatIndex
+        ? uvColor(verdict.uvIndex)
+        : heatColor(verdict.heatIndex);
 
   return (
-    <section className="verdict" id="verdict" ref={sectionRef} aria-labelledby="v-title">
+    <section
+      className="verdict"
+      id="verdict"
+      ref={sectionRef}
+      aria-labelledby="v-title"
+      style={{ ["--risk" as string]: risk }}
+    >
       <div className="v-head">
         {alert ? (
           <p
@@ -85,18 +102,39 @@ export function Verdict(props: VerdictProps) {
           </h1>
           <p className="verdict-lede">{verdict.lede}</p>
         </div>
+        <DayBar day={day} hour={hour} nowHour={nowHour} protect={verdict.protectText} hot={facts.hot} />
       </div>
 
       <div className="meters">
         <div className="meter">
           <div className="meter-head">
             <span>紫外線指數</span>
-            <span>{[`${pad2(hour)} 時`, uvSource].filter(Boolean).join(" · ")}</span>
+            <span className="meter-when">{[`${pad2(hour)} 時`, uvSource].filter(Boolean).join(" · ")}</span>
           </div>
           <MeterValue value={verdict.uv} level={verdict.uvIndex} levels={UV_LEVELS} color={uvColor} ink={uvInk} />
-          <Scale levels={UV_LEVELS} active={verdict.uvIndex} color={uvColor} />
-          <p className="meter-foot">{[`${pad2(hour)} 時`, uvSource].filter(Boolean).join(" · ")}</p>
+          <Gauge value={verdict.uv} scale={UV_SCALE} levels={UV_LEVELS} level={verdict.uvIndex} color={uvColor} />
+          <p className="meter-action">{verdict.uvIndex < 0 ? "資料不足，請查中央氣象署" : UV_LEVELS[verdict.uvIndex].action}</p>
           {!demo ? <p className="source-note">{sourceText(point?.uvOrigin)}</p> : null}
+        </div>
+        <div className="meter">
+          <div className="meter-head">
+            <span>體感溫度</span>
+            <span className="meter-when">{point?.temperature === undefined ? "氣溫 --" : `氣溫 ${Math.round(point.temperature)}°`}</span>
+          </div>
+          <MeterValue
+            value={verdict.apparent}
+            unit="°C"
+            level={verdict.heatIndex}
+            levels={HEAT_LEVELS}
+            color={heatColor}
+            ink={heatInk}
+          />
+          <Gauge value={verdict.apparent} scale={HEAT_SCALE} levels={HEAT_LEVELS} level={verdict.heatIndex} color={heatColor} />
+          <p className="meter-action">{verdict.heatIndex < 0 ? "資料不足，請查中央氣象署" : HEAT_LEVELS[verdict.heatIndex].action}</p>
+          {!demo ? <>
+            <p className="source-note">體感：{sourceText(point?.apparentOrigin)}</p>
+            <p className="source-note">氣溫：{sourceText(point?.temperatureOrigin)}</p>
+          </> : null}
         </div>
         <div className="burn">
           <div className="burn-row">
@@ -111,26 +149,6 @@ export function Verdict(props: VerdictProps) {
           </div>
           <BurnText day={day} hour={hour} dayWord={dayWord} med={med} />
         </div>
-        <div className="meter">
-          <div className="meter-head">
-            <span>體感溫度</span>
-            <span>{point?.temperature === undefined ? "" : `氣溫 ${Math.round(point.temperature)}°`}</span>
-          </div>
-          <MeterValue
-            value={verdict.apparent}
-            unit="°C"
-            level={verdict.heatIndex}
-            levels={HEAT_LEVELS}
-            color={heatColor}
-            ink={heatInk}
-          />
-          <Scale levels={HEAT_LEVELS} active={verdict.heatIndex} color={heatColor} />
-          <p className="meter-foot">{point?.temperature === undefined ? "氣溫 --" : `氣溫 ${Math.round(point.temperature)}°`}</p>
-          {!demo ? <>
-            <p className="source-note">體感：{sourceText(point?.apparentOrigin)}</p>
-            <p className="source-note">氣溫：{sourceText(point?.temperatureOrigin)}</p>
-          </> : null}
-        </div>
       </div>
 
       <div className="v-body">
@@ -140,7 +158,7 @@ export function Verdict(props: VerdictProps) {
             <dd>{verdict.protectText}</dd>
           </div>
           <div className="fact">
-            <dt>已知最高（體感）</dt>
+            <dt>已知最高體感</dt>
             <dd>
               {facts.peakHour === undefined || day.apparentMax === undefined
                 ? "--"
@@ -180,22 +198,95 @@ function MeterValue(props: {
   );
 }
 
-function Scale({ levels, active, color }: { levels: Level[]; active: number; color: (level: number) => string }) {
+/** Level boundaries on each gauge, halfway between the rounded values that change level. */
+const UV_SCALE = [0, 2.5, 5.5, 7.5, 10.5, 12];
+const HEAT_SCALE = [20, 27.5, 31.5, 35.5, 39.5, 42];
+
+/**
+ * A banded bar with a dot at the reading, so position and label carry the level
+ * as well as colour.
+ */
+function Gauge(props: { value?: number; scale: number[]; levels: Level[]; level: number; color: (level: number) => string }) {
+  const { value, scale, levels, level, color } = props;
+  const lo = scale[0];
+  const span = scale[scale.length - 1] - lo;
+  const pct = (v: number) => ((Math.min(scale[scale.length - 1], Math.max(lo, v)) - lo) / span) * 100;
+  const widths = levels.map((_, i) => scale[i + 1] - scale[i]);
   return (
-    <div className="scale" aria-hidden="true">
-      <div className="scale-bar">
-        {levels.map((level, index) => (
-          <span key={level.name} className={index === active ? "on" : ""} style={{ background: color(index) }} />
+    <div className={`gauge${value === undefined ? " is-empty" : ""}`} aria-hidden="true">
+      <div className="gauge-track" style={{ gridTemplateColumns: widths.map((w) => `${w}fr`).join(" ") }}>
+        {levels.map((l, i) => (
+          <span key={l.name} style={{ background: color(i) }} />
         ))}
+        {value !== undefined ? (
+          <i className="gauge-dot" style={{ left: `${pct(value)}%`, background: color(level) }} />
+        ) : null}
       </div>
-      <div className="scale-labels">
-        {levels.map((level, index) => (
-          <span key={level.name} className={index === active ? "on" : ""}>
-            {level.short}
+      <div className="gauge-labels" style={{ gridTemplateColumns: widths.map((w) => `${w}fr`).join(" ") }}>
+        {levels.map((l, i) => (
+          <span key={l.name} className={i === level ? "on" : ""}>
+            {l.short}
           </span>
         ))}
       </div>
     </div>
+  );
+}
+
+/**
+ * The whole day at a glance: hours that need sun protection and hours that are
+ * hot, with the selected hour marked. Missing hours are hatched, not left blank.
+ */
+function DayBar(props: { day: DayOutlook; hour: number; nowHour: number | null; protect: string; hot: HourRange[] }) {
+  const { day, hour, nowHour, protect, hot } = props;
+  const rows: Array<{ key: string; label: string; cell: (h: DayOutlook["hours"][number]) => string | null | undefined }> = [
+    { key: "uv", label: "防曬", cell: (h) => (h.uv === undefined ? undefined : h.uv >= 3 ? uvColor(uvLevel(h.uv)) : null) },
+    {
+      key: "heat",
+      label: "高溫",
+      cell: (h) => (h.apparent === undefined ? undefined : h.apparent >= 32 ? heatColor(heatLevel(h.apparent)) : null),
+    },
+  ];
+  const marker = `calc(${((hour + 0.5) / 24) * 100}%)`;
+  return (
+    <figure className="daybar">
+      <figcaption className="visually-hidden">
+        {`需要防曬：${protect}。體感 32 度以上：${hot.length ? formatRanges(hot) : "無或資料不足"}。`}
+      </figcaption>
+      <div className="daybar-grid" aria-hidden="true">
+        {rows.map((row) => (
+          <div className="daybar-row" key={row.key}>
+            <span className="daybar-label">{row.label}</span>
+            <div className="daybar-cells">
+              {day.hours.map((h, i) => {
+                const fill = row.cell(h);
+                return (
+                  <i
+                    key={i}
+                    className={[fill === undefined ? "is-missing" : fill === null ? "" : "is-on", i === hour ? "is-sel" : ""].join(" ").trim() || undefined}
+                    style={fill ? { background: fill } : undefined}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        ))}
+        <div className="daybar-row daybar-axis">
+          <span className="daybar-label" />
+          <div className="daybar-cells">
+            <b className="daybar-marker" style={{ left: marker }}>
+              {nowHour === hour ? "現在" : `${pad2(hour)} 時`}
+            </b>
+            {/* Axis ticks give way to the marker when they would overlap it. */}
+            {[0, 6, 12, 18].filter((t) => Math.abs(t - (hour + 0.5)) >= 2.5).map((t) => (
+              <small key={t} style={{ left: `${(t / 24) * 100}%` }}>
+                {pad2(t)}
+              </small>
+            ))}
+          </div>
+        </div>
+      </div>
+    </figure>
   );
 }
 
@@ -266,7 +357,7 @@ function PackList(props: { county: string; day: DayOutlook; dayWord: string; dem
     <div className="pack">
       <div className="pack-head">
         <h2 className="pack-title">出門帶這些</h2>
-        <button className="btn-ghost" type="button" onClick={copy}>
+        <button className="btn-ghost btn-share" type="button" onClick={copy}>
           複製提醒傳給家人
         </button>
       </div>
