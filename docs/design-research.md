@@ -75,8 +75,50 @@
 4. **新增「今日時段條」**（SunSmart）。06–19 時的一條橫條，標出需要防曬的時段、體感 32° 以上的高溫時段與現在位置，把「幾點到幾點」畫出來。
 5. **熱傷害色階最高級改為洋紅**（NWS HeatRisk）。原本「危險」與「極危險」都是深紅系，色覺差異者幾乎分不出來；洋紅與紅的差異在色相與亮度上都較大。UV 色階維持 CWA／WHO 標準不變，以免與官方頁面不一致。
 6. **資料時效獨立成狀態列**（NWS、環境省）。以「新鮮（45 分鐘內）／延遲（45 分鐘–2 小時）」兩種狀態加上「有效至」時間顯示；超過 2 小時的既有安全機制（停止顯示數值）不變。
-7. **視覺語言**：暖白紙色底（淺色）與深墨藍底（深色），數字用 Geist、中文用 Noto Sans TC；卡片圓角與淡陰影取代細框線，讓層級靠留白與大小，而不是靠線條。
+7. **視覺語言**：暖白紙色底（淺色）與深墨藍底（深色），數字用 Geist、中文用系統字型；卡片圓角與淡陰影取代細框線，讓層級靠留白與大小，而不是靠線條。
 8. **不採用**：動畫天氣背景、裝飾插畫、第三方地圖底圖。這些會拖慢手機載入，且沒有增加判斷資訊。
+
+## 每個參考對象拿來做什麼
+
+| 產品 | 它本身用來做什麼 | 本站借鏡的功能 | 本站沒有採用的部分（與原因） |
+| --- | --- | --- | --- |
+| 中央氣象署紫外線頁 | 公布測站即時 UV 與當日最大值 | WHO 五級名稱與色階；無資料就留白 | 測站點地圖：手機上點太小，改用縣市面量圖＋排序清單 |
+| 日本環境省熱中症予防情報 | 發布 WBGT 預測、實況與熱中症警戒アラート | 每個等級配一句具體動作；今天／明天切換；資料停更直接說明 | WBGT：台灣沒有對應的公開逐時資料，本站用氣象署體感溫度 |
+| NWS HeatRisk | 七天熱風險地圖，供民眾與衛生單位準備 | 最高級用洋紅；依「誰會受影響」分對象建議；固定的 Valid／Updated 欄位 | 依氣候值計算的相對風險：需要長期氣候資料，超出本站資料範圍 |
+| EPA／WHO UV Index | UV 指數的定義與防護建議 | 3 以上建議防曬；以時段表達防護建議 | — |
+| Apple 天氣 | 個人天氣 App 的 UV 與體感卡片 | 大數字＋等級名＋色階條上的圓點；一句含時間的結論 | 動態天氣背景：耗電且不增加判斷資訊 |
+| SunSmart Global UV | WHO／ARPANSA 的防曬時段 App | 「全天防曬時段條」 | 依經緯度即時計算：本站以縣市為單位，對應氣象署資料 |
+| Windy、Ventusky 等開源／民間儀表板 | 天氣圖層視覺化 | 時間軸拖曳選時段 | 角落小字的資料時間（反面教材） |
+
+### 開源參考與授權
+
+- **taiwan-atlas**（MIT）：縣市界線 TopoJSON，經 `scripts/build-taiwan-map.mjs` 轉成 SVG path，授權聲明在 `public/third-party-notices.txt`。改版前即已使用。
+- **Geist 字型**（Vercel，SIL Open Font License 1.1）：數字字型，經 Google Fonts 非阻塞載入，OFL 允許網頁嵌入使用。
+- 中文改用系統字型（蘋果 PingFang TC、Windows 微軟正黑體、Android Noto Sans CJK），不再從 Google Fonts 載入 Noto Sans TC：其 CSS 與字型檔會阻擋首次繪製，行動版 Lighthouse 因此只有 56 分。
+- **Radix Colors、shadcn/ui**（皆為 MIT）：只參考其**設計方法**（語意化顏色角色、`--background / --foreground / --muted / --border / --ring` 的 token 命名、分段控制元件的樣式），沒有複製程式碼，因此不需另附授權。
+- 本次改版沒有直接引入其他開源專案的程式碼。
+
+## 主流前端設計語言
+
+| 參考 | 值得學的地方 | 本站落實方式 |
+| --- | --- | --- |
+| Linear | 克制：大量留白、細邊框、少量強調色；深色模式是一級公民 | 只有一個品牌強調色（深青）；風險顏色只用在有意義的地方 |
+| Vercel（Geist） | 等寬數字、清楚的字級層級、黑白為主 | 數字全用 Geist＋`tabular-nums`；三層字級：結論、數值、說明 |
+| Stripe | 柔和的放射漸層與多層陰影營造深度 | 頁首暖色光暈、結論卡依風險色的放射漸層、兩層陰影 token |
+| Apple 天氣 | 卡片化、一卡一個問題、色階條加圓點 | 指標卡與色階圓點 |
+| Observable | 圖表直接標註數值，少用圖例 | 時間軸直接標出所選時段的數值；手機上每兩小時標體感溫度 |
+| Radix Colors／shadcn/ui | 語意化 token；元件狀態（hover、focus ring）一致 | `--surface`、`--muted`、`--line`、`--focus` 等語意 token；統一 focus ring |
+| Tailwind | 4 px 為基準的間距與字級刻度 | `--space-1`～`--space-8` 間距刻度與 `--step-*` 字級刻度 |
+
+### 本站設計語言（tokens）
+
+- **顏色**：語意角色（`--bg`、`--surface`、`--surface-2`、`--ink`、`--muted`、`--line`、`--accent`、`--focus`），淺色與深色各一組；資料色階（`--uv-0..4`、`--ht-0..4`）各附前景色，確保色塊上的文字對比。
+- **間距**：4 px 基準，`--space-1`（4）到 `--space-8`（48）。
+- **字級**：`--step--1`（13）到 `--step-3`（流體 28–42）與 `--step-num`（大數字）。
+- **圓角**：`--radius-sm` 12、`--radius` 18、`--radius-lg` 24、`--radius-pill`。
+- **陰影**：`--shadow` 兩層（貼近的細陰影＋擴散陰影）。
+- **觸控**：`--tap` 44 px，所有按鈕、分頁、選單、清單列的最小高度。
+- **動態**：`--ease`、`--dur`；`prefers-reduced-motion` 時全部關閉。
 
 ## 參考來源
 
@@ -84,4 +126,5 @@
 - 環境省熱中症予防情報サイト：<https://www.wbgt.env.go.jp/>
 - NWS HeatRisk：<https://www.wpc.ncep.noaa.gov/heatrisk/>
 - NWS HeatRisk 說明：<https://www.wpc.ncep.noaa.gov/heatrisk/understanding.html>
+- StatCounter 台灣平台占比：<https://gs.statcounter.com/platform-market-share/desktop-mobile-tablet/taiwan>
 - EPA UV Index 指南（封存版）：<https://19january2021snapshot.epa.gov/sites/static/files/documents/uviguide.pdf>

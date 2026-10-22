@@ -4,7 +4,7 @@
 
 線上版：https://livejiaquan.github.io/taiwan-uv-heat-dashboard/
 
-<img src="docs/screenshots/after-mobile-top.png" alt="手機畫面：結論卡、全天防曬與高溫時段條、紫外線與體感溫度指標" width="320">
+<img src="docs/screenshots/after-390-light-first-screen.png" alt="手機畫面：結論卡、全天防曬與高溫時段條、紫外線與體感溫度指標" width="320">
 
 ## 功能
 
@@ -19,7 +19,7 @@
 - **全台比較**：縣市著色地圖（含金門、連江小框）與可排序清單。
 - **高溫提醒**：預報最高氣溫達氣象署高溫資訊門檻（36°C／38°C）時提示。
 - **資料時效**：顯示快照時間、有效期限與「最新／延遲」狀態。
-- 手機優先的版面、深色模式、鍵盤操作與螢幕閱讀器支援。設計依據見 [`docs/design-research.md`](docs/design-research.md)。
+- 手機優先的版面、深色模式、鍵盤操作與螢幕閱讀器支援。設計依據見 [`docs/design-research.md`](docs/design-research.md)，使用者與裝置分析見 [`docs/ux-research.md`](docs/ux-research.md)。
 
 ## 資料
 

@@ -25,7 +25,7 @@ function App() {
         <div>
           <BrandMark />
           <h1>氣象資料暫時無法使用</h1>
-          <p>{error ?? data?.issues[0] ?? "目前沒有有效氣象資料。"}請稍後再試，或直接查看中央氣象署網站。</p>
+          <p>{error ?? data?.issues[0] ?? "目前沒有有效氣象資料。"}也可以直接查看中央氣象署網站。</p>
           <button className="btn-ghost" type="button" onClick={() => void refresh()}>
             重新載入
           </button>
