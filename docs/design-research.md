@@ -156,12 +156,25 @@
 - **間距只用 8pt 階梯**：4 / 8 / 12 / 16 / 24 / 32 / 48 / 64，包含時段條與色階條的格間距。
 - **首屏密度**：資料來源與觀測時間收進「這些數值從哪裡來」展開區；手機上的說明限兩行，可按「看完整說明」展開；狀態列在手機只留更新時間與有效期限。
 
+## 第五輪：照 Yr.no 逐時頁的版面重排
+
+前幾輪的參考網站都沒有留截圖。這一輪先用 Chrome 實際打開 Yr.no 臺南逐時詳細頁，截圖並從 DOM 量 token（見 `docs/references/tokens.md`），再照著改版面：
+
+- **色彩結構**：淺藍灰頁面底、白卡、深藍黑字，顏色只用在資料值上（體感紅、降雨藍、UV 色階）。色票換成本站自己的。
+- **卡片**：8px 圓角、無陰影、無外框；表格列以 1px 淺藍線分隔，列高 44px（Yr 為 41px，取觸控目標 44px）。
+- **容器**：內容寬 1280px，1440 視窗下左緣落在 x 80、卡片內緣 x 96，和 Yr 實測相同。
+- **節奏**：頁首 → 地點名稱與副標 → 今天／明天分頁 → 結論句（保留第三輪的唯一焦點）→ 指標列白卡 → 置中的「表格／圖表」分段控制 → 「今天逐時」標題 → 逐時表格白卡。標題距卡片 16px、卡片距下一個標題 32px。
+- **新增逐時表格**（Yr 的主體）：時間、紫外線、體感、氣溫、降雨、提醒；點一列會更新上方結論。原本的圖表保留為「圖表」分頁。
+- **拿掉**：結論卡的大面積漸層與陰影、全天時段條（逐時表格已呈現同樣資訊）。
+- 並排比較：`docs/references/side-by-side-1440.png`、`side-by-side-390.png` 與模糊版。
+
 ## 參考來源
 
 - 中央氣象署紫外線觀測：<https://www.cwa.gov.tw/V8/C/W/OBS_UVI.html>
 - 環境省熱中症予防情報サイト：<https://www.wbgt.env.go.jp/>
 - NWS HeatRisk：<https://www.wpc.ncep.noaa.gov/heatrisk/>
 - NWS HeatRisk 說明：<https://www.wpc.ncep.noaa.gov/heatrisk/understanding.html>
+- Yr.no 臺南逐時詳細頁：<https://www.yr.no/en/details/table/2-1668355/Taiwan/Tainan>
 - IQAir 臺北空品：<https://www.iqair.com/taiwan/taipei>
 - weather.com 今日天氣：<https://weather.com/weather/today/l/TWXX0021:1:TW>
 - Linear：<https://linear.app/>
