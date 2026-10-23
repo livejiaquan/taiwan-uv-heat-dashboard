@@ -4,7 +4,7 @@
 
 線上版：https://livejiaquan.github.io/taiwan-uv-heat-dashboard/
 
-<img src="docs/references/ours-390.png" alt="手機畫面：結論卡、全天防曬與高溫時段條、紫外線與體感溫度指標" width="320">
+<img src="docs/references/ours-390.png" alt="手機畫面：結論句、紫外線與體感溫度指標列、逐時表格" width="320">
 
 ## 功能
 
