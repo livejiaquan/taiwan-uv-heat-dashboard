@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Audience } from "../../lib/guidance";
 import { SKIN_TYPES } from "../../lib/levels";
 import { storage } from "../../lib/storage";
-import { taipeiHour } from "../../lib/time";
+import { freshnessOf } from "../../lib/freshness";
+import { formatRelativeAge, taipeiHour } from "../../lib/time";
 import type { DashboardData } from "../../lib/types";
 import { Advice } from "./components/Advice";
 import { Footer } from "./components/Footer";
@@ -46,6 +47,8 @@ export function Dashboard({ data, now, refreshing, onRefresh }: DashboardProps) 
   const hour = pickedHour ?? (dayIndex === 0 ? nowHour : 12);
   const isNow = dayIndex === 0 && hour === nowHour;
   const dayWord = dayIndex === 0 ? "今天" : "明天";
+  const tier = data.mode === "live" ? freshnessOf(data.dataTime, now) : "live";
+  const staleLabel = tier === "old" || tier === "unusable" ? { tier, age: formatRelativeAge(data.dataTime, now) } : undefined;
 
   useEffect(() => {
     const title = titleRef.current;
@@ -116,6 +119,7 @@ export function Dashboard({ data, now, refreshing, onRefresh }: DashboardProps) 
             hour={hour}
             isNow={isNow}
             nowHour={dayIndex === 0 ? nowHour : null}
+            staleLabel={staleLabel}
             skin={skin}
             demo={data.mode === "demo"}
             onSkin={changeSkin}

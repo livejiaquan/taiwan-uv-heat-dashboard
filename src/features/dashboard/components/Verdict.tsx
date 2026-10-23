@@ -34,6 +34,8 @@ interface VerdictProps {
   isNow: boolean;
   /** Current hour when showing today, otherwise null. */
   nowHour?: number | null;
+  /** Set when the data is more than 6 hours old: the card turns neutral and, past 24 hours, says how old. */
+  staleLabel?: { tier: "old" | "unusable"; age: string };
   skin: number;
   demo: boolean;
   onSkin: (skin: number) => void;
@@ -41,7 +43,7 @@ interface VerdictProps {
 }
 
 export function Verdict(props: VerdictProps) {
-  const { sectionRef, titleRef, county, day, dayIndex, dayWord, hour, isNow, nowHour = null, skin, demo, onSkin, onDay } = props;
+  const { sectionRef, titleRef, county, day, dayIndex, dayWord, hour, isNow, nowHour = null, staleLabel, skin, demo, onSkin, onDay } = props;
   const [ledeOpen, setLedeOpen] = useState(false);
   const med = SKIN_TYPES[skin].med;
   const verdict = verdictFor(day, hour, dayWord, med);
@@ -51,7 +53,7 @@ export function Verdict(props: VerdictProps) {
   const uvSource = point?.uv === undefined || demo ? "" : point.uvOrigin?.kind === "observation" ? "測站觀測" : "本站推估";
   // The card takes the colour of whichever reading is more severe right now.
   const risk =
-    verdict.uvIndex < 0 && verdict.heatIndex < 0
+    staleLabel || (verdict.uvIndex < 0 && verdict.heatIndex < 0)
       ? "var(--missing)"
       : verdict.uvIndex >= verdict.heatIndex
         ? uvColor(verdict.uvIndex)
@@ -82,6 +84,7 @@ export function Verdict(props: VerdictProps) {
             <strong>{county.county}</strong>
             <span>{`${isNow ? "現在" : dayWord} ${pad2(hour)} 時`}</span>
             {day.weather ? <span>{day.weather}</span> : null}
+            {staleLabel?.tier === "unusable" ? <span className="age-tag">{`${staleLabel.age}的資料`}</span> : null}
           </div>
           <div className="day-toggle" role="group" aria-label="日期">
             {(["今天", "明天"] as const).map((label, index) => (

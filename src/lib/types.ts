@@ -107,6 +107,8 @@ export interface DashboardData {
   mode: DataMode;
   counties: CountyOutlook[];
   generatedAt: string;
+  /** When the data itself was observed or fetched; freshness is measured from this in the browser. */
+  dataTime: string;
   latestObservation?: string;
   stale: boolean;
   /** Human-readable problems with the sources, shown in the status line. */
