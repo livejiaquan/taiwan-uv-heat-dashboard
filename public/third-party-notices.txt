@@ -18,7 +18,7 @@ It is not an official service or an official hourly UV forecast.
 Map
 
 County boundaries: Ministry of the Interior, National Land Surveying and Mapping Center.
-Processed using taiwan-atlas: https://github.com/dkaoster/taiwan-atlas
+Processed using taiwan-atlas by Daniel Kao (npm package "taiwan-atlas").
 
 MIT License
 

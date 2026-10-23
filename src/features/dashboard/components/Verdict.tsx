@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import { Check, Copy, Flame, Footprints, ShieldCheck, Sun, Thermometer, type LucideIcon } from "lucide-react";
 import { factsFor, packFor, shareText, verdictFor } from "../../../lib/guidance";
 import {
   HEAT_LEVELS,
@@ -14,6 +15,7 @@ import {
 } from "../../../lib/levels";
 import { formatClock, pad2 } from "../../../lib/time";
 import type { CountyOutlook, DayOutlook, MetricOrigin } from "../../../lib/types";
+import { ICON } from "./icons";
 
 const sourceText = (origin?: MetricOrigin): string => {
   if (!origin) return "資料不足";
@@ -57,6 +59,7 @@ export function Verdict(props: VerdictProps) {
         : heatColor(verdict.heatIndex);
 
   const metric = (
+    Icon: LucideIcon,
     label: string,
     when: string,
     value: number | undefined,
@@ -69,7 +72,7 @@ export function Verdict(props: VerdictProps) {
   ) => (
     <div className="metric">
       <dt>
-        <span>{label}</span>
+        <span className="metric-label"><Icon {...ICON} size={16} />{label}</span>
         <span className="metric-when">{when}</span>
       </dt>
       <dd>
@@ -133,14 +136,14 @@ export function Verdict(props: VerdictProps) {
 
       <div className="metric-card">
         <dl className="metric-row">
-          {metric("紫外線指數", [`${pad2(hour)} 時`, uvSource].filter(Boolean).join(" · "), verdict.uv, undefined, verdict.uvIndex, UV_LEVELS, uvColor, uvInk, UV_SCALE)}
-          {metric("體感溫度", point?.temperature === undefined ? "氣溫 --" : `氣溫 ${Math.round(point.temperature)}°`, verdict.apparent, "°C", verdict.heatIndex, HEAT_LEVELS, heatColor, heatInk, HEAT_SCALE)}
+          {metric(Sun, "紫外線指數", [`${pad2(hour)} 時`, uvSource].filter(Boolean).join(" · "), verdict.uv, undefined, verdict.uvIndex, UV_LEVELS, uvColor, uvInk, UV_SCALE)}
+          {metric(Thermometer, "體感溫度", point?.temperature === undefined ? "氣溫 --" : `氣溫 ${Math.round(point.temperature)}°`, verdict.apparent, "°C", verdict.heatIndex, HEAT_LEVELS, heatColor, heatInk, HEAT_SCALE)}
           <div className="metric fact">
-            <dt>需要防曬</dt>
+            <dt className="metric-label"><ShieldCheck {...ICON} size={16} />需要防曬</dt>
             <dd>{verdict.protectText}</dd>
           </div>
           <div className="metric fact">
-            <dt>已知最高<span className="dt-long">體感</span></dt>
+            <dt className="metric-label"><Flame {...ICON} size={16} />已知最高<span className="dt-long">體感</span></dt>
             <dd>
               {facts.peakHour === undefined || day.apparentMax === undefined
                 ? "--"
@@ -148,7 +151,7 @@ export function Verdict(props: VerdictProps) {
             </dd>
           </div>
           <div className="metric fact">
-            <dt>適合運動</dt>
+            <dt className="metric-label"><Footprints {...ICON} size={16} />適合運動</dt>
             <dd>{facts.exercise.length ? facts.exercise.join("、") : "無法確認"}</dd>
           </div>
         </dl>
@@ -290,6 +293,7 @@ function PackList(props: { county: string; day: DayOutlook; dayWord: string; dem
       <div className="pack-head">
         <h2 className="pack-title">出門帶這些</h2>
         <button className="btn-ghost btn-share" type="button" onClick={copy}>
+          <Copy {...ICON} size={20} />
           複製提醒傳給家人
         </button>
       </div>
@@ -298,9 +302,7 @@ function PackList(props: { county: string; day: DayOutlook; dayWord: string; dem
           {items.map(([item, why]) => (
             <li key={item}>
               <span className="tick" aria-hidden="true">
-                <svg width="12" height="12" viewBox="0 0 12 12">
-                  <path d="M2.5 6.2 5 8.5l4.5-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
+                <Check {...ICON} size={16} />
               </span>
               <span>
                 <strong>{item}</strong>
