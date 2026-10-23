@@ -2,7 +2,9 @@ import { useEffectEvent, useLayoutEffect, useRef, useState, type KeyboardEvent, 
 import { heatColor, heatLevel, uvColor, uvInk, uvLevel } from "../../../lib/levels";
 import { pad2 } from "../../../lib/time";
 import type { DayOutlook } from "../../../lib/types";
+import { ChartLine, Table2 } from "lucide-react";
 import { HourTable } from "./HourTable";
+import { ICON } from "./icons";
 
 export type HourView = "table" | "chart";
 
@@ -289,9 +291,11 @@ export function Timeline({ day, dayWord, hour, nowHour, isNow, centerKey, demo, 
       <div className="seg-row">
         <div className="segmented" role="group" aria-label="顯示方式">
           <button type="button" aria-pressed={view === "table"} onClick={() => onView("table")}>
+            <Table2 {...ICON} size={20} />
             表格
           </button>
           <button type="button" aria-pressed={view === "chart"} onClick={() => onView("chart")}>
+            <ChartLine {...ICON} size={20} />
             圖表
           </button>
         </div>

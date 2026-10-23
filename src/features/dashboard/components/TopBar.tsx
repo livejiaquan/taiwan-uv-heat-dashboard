@@ -1,6 +1,8 @@
 import { heatColor, heatInk, heatLevel, uvColor, uvInk, uvLevel } from "../../../lib/levels";
 import type { CountyOutlook, DayOutlook } from "../../../lib/types";
-import { BrandMark } from "./BrandMark";
+import { ChevronDown } from "lucide-react";
+import { Brand } from "./BrandMark";
+import { ICON } from "./icons";
 
 interface TopBarProps {
   counties: CountyOutlook[];
@@ -22,8 +24,7 @@ export function TopBar({ counties, county, day, hour, compact, onSelectCounty }:
     <header className={`topbar${compact ? " is-compact" : ""}`}>
       <div className="wrap">
         <div className="brand">
-          <BrandMark />
-          <span className="brand-name">台灣曬熱指南</span>
+          <Brand />
           <span className="mini" aria-hidden="true">
             <span className="cell-chip" style={{ background: uvColor(ul), color: uvInk(ul) }}>
               UV {point?.uv === undefined ? "--" : Math.round(point.uv)}
@@ -48,9 +49,7 @@ export function TopBar({ counties, county, day, hour, compact, onSelectCounty }:
               </optgroup>
             ))}
           </select>
-          <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
-            <path d="M2 4.5 6 8l4-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-          </svg>
+          <ChevronDown {...ICON} size={16} />
         </label>
       </div>
     </header>
