@@ -29,7 +29,7 @@ Each dataset is fetched independently. A failing dataset only removes its own fi
 
 ## Freshness
 
-The status line shows the snapshot collection time and whether the selected county has valid observations. Each displayed observed metric identifies its contributing station and actual observation time. The browser re-fetches the same-site snapshot every ten minutes while visible and upon returning to the tab; retained snapshots are re-evaluated every minute. Observations older than 45 minutes cannot supply current readings, and snapshots older than two hours supply no numerical data. A failed refresh cannot reset these timestamps.
+The status line shows the snapshot collection time and whether the selected county has valid observations. Each displayed observed metric identifies its contributing station and actual observation time. The browser re-fetches the same-site snapshot every ten minutes while visible and upon returning to the tab; retained snapshots are re-evaluated every minute. Observations older than 45 minutes cannot supply current readings. Older snapshots are still shown, labelled with the data time and its age (live ≤ 90 minutes, aging ≤ 6 hours, old ≤ 24 hours with a link to CWA, then the age in days). A failed refresh cannot reset these timestamps.
 
 ## Map
 

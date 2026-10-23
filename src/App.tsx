@@ -1,6 +1,28 @@
+import type { ReactNode } from "react";
 import { BrandMark } from "./features/dashboard/components/BrandMark";
+import { Footer } from "./features/dashboard/components/Footer";
 import { Dashboard } from "./features/dashboard/Dashboard";
 import { useDashboardData } from "./features/dashboard/useDashboardData";
+
+/** Header, content and footer stay in place even when there is no data to show. */
+function Shell({ children }: { children: ReactNode }) {
+  return (
+    <>
+      <header className="topbar">
+        <div className="wrap">
+          <div className="brand">
+            <BrandMark />
+            <span className="brand-name">台灣曬熱指南</span>
+          </div>
+        </div>
+      </header>
+      <div className="wrap">
+        <main>{children}</main>
+        <Footer />
+      </div>
+    </>
+  );
+}
 
 function App() {
   const demo = new URLSearchParams(window.location.search).get("demo") === "1";
@@ -8,31 +30,34 @@ function App() {
 
   if (status === "loading") {
     return (
-      <main className="screen-state" aria-busy="true">
-        <div>
+      <Shell>
+        <section className="state-card" aria-busy="true">
           <div className="spinner" aria-hidden="true" />
-          <h1>正在讀取氣象資料快照</h1>
+          <h1>正在讀取氣象資料</h1>
           <p>整理各縣市的紫外線、體感溫度與降雨預報。</p>
-        </div>
-      </main>
+        </section>
+      </Shell>
     );
   }
 
-  const hasWeather = data?.counties.some((c) => c.days.some((d) => d.hours.some((h) => h.uv !== undefined || h.apparent !== undefined || h.temperature !== undefined)));
-  if (!data || !hasWeather) {
+  // Only reached when no snapshot has ever loaded on this device; any old data is shown instead.
+  if (!data) {
     return (
-      <main className="screen-state">
-        <div>
-          <BrandMark />
-          <h1>氣象資料暫時無法使用</h1>
-          <p>{error ?? data?.issues[0] ?? "目前沒有有效氣象資料。"}也可以直接查看中央氣象署網站。</p>
-          <button className="btn-ghost" type="button" onClick={() => void refresh()}>
-            重新載入
-          </button>
-          <p><a href="https://www.cwa.gov.tw/" target="_blank" rel="noopener noreferrer">查看中央氣象署最新資訊</a></p>
-          <p><a href="?demo=1">查看示範介面（非實際天氣）</a></p>
-        </div>
-      </main>
+      <Shell>
+        <section className="state-card">
+          <h1>目前讀不到氣象資料</h1>
+          <p>{error ?? "目前沒有氣象資料。"}也可以直接查看中央氣象署網站。</p>
+          <div className="state-actions">
+            <button className="btn-ghost" type="button" onClick={() => void refresh()} disabled={refreshing}>
+              {refreshing ? "重新載入中…" : "重新載入"}
+            </button>
+            <a href="https://www.cwa.gov.tw/V8/C/W/OBS_UVI.html" target="_blank" rel="noopener noreferrer">
+              查看中央氣象署紫外線資訊
+            </a>
+            <a href="?demo=1">查看示範介面（非實際天氣）</a>
+          </div>
+        </section>
+      </Shell>
     );
   }
 

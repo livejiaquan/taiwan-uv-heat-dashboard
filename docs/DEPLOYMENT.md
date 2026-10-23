@@ -19,7 +19,7 @@ In either mode, no usable current weather causes collection to fail and stops de
 - Actions requests an update at minutes 7, 27, and 47 of every hour (UTC).
 - GitHub schedules are best effort: jobs may be delayed or skipped. Scheduled workflows in inactive public repositories may be disabled; check the Actions tab if updates stop.
 - The browser re-fetches every ten minutes while visible and when the tab becomes visible again.
-- The outlook is recalculated every minute from the original snapshot: station readings expire after **45 minutes**; all numerical data is suppressed when a snapshot is older than **two hours** or its time is invalid/future by more than five minutes.
+- The outlook is recalculated every minute from the original snapshot: station readings expire after **45 minutes**; snapshots are not suppressed for age; the page labels them **live** (≤ 90 minutes), **aging** (≤ 6 hours), **old** (≤ 24 hours, with a link to CWA) or by age in days. Scheduled runs are best effort and in practice arrive every 3–4 hours.
 - Forecasts are used only within their parsed valid time intervals. Taipei today/tomorrow are rebuilt across midnight.
 
 This is a periodically refreshed guide, not a real-time warning service. The small UI clock and network/schedule latency do not guarantee that a threshold changes exactly on the second. Official weather warnings remain authoritative.

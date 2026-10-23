@@ -74,6 +74,7 @@ export const buildDemoDashboard = (issues: string[], now = Date.now()): Dashboar
     mode: "demo",
     counties: outlooks,
     generatedAt: new Date(now).toISOString(),
+    dataTime: new Date(now).toISOString(),
     stale: false,
     issues,
   };
