@@ -1,5 +1,4 @@
-import { STALE_AFTER_MINUTES } from "../../../lib/outlook";
-import { SNAPSHOT_MAX_AGE_MS } from "../../../lib/snapshot";
+import { dataTimeLabel, freshnessOf } from "../../../lib/freshness";
 import { formatClock, formatRelativeAge } from "../../../lib/time";
 import type { CountyOutlook, DashboardData } from "../../../lib/types";
 
@@ -11,30 +10,35 @@ interface StatusLineProps {
   onRefresh: () => void;
 }
 
+const OFFICIAL = "https://www.cwa.gov.tw/V8/C/W/OBS_UVI.html";
+
 export function StatusLine({ data, county, now, refreshing, onRefresh }: StatusLineProps) {
   const live = data.mode === "live";
   // The headline already says the page shows demo data.
   const issues = data.issues.filter((issue) => !issue.includes("目前顯示示範資料"));
-  const fetched = Date.parse(data.generatedAt);
-  const ageMinutes = (now - fetched) / 60000;
-  const state = !live ? "demo" : ageMinutes > STALE_AFTER_MINUTES ? "late" : "fresh";
-  const validUntil = new Date(fetched + SNAPSHOT_MAX_AGE_MS).toISOString();
+  const tier = live ? freshnessOf(data.dataTime, now) : "live";
+  const official = (
+    <a href={OFFICIAL} target="_blank" rel="noopener noreferrer">
+      中央氣象署
+    </a>
+  );
 
   return (
-    <div className={`status-line is-${state}`} role="status">
+    <div className={`status-line${live ? ` is-${tier}` : " is-demo"}`} role="status">
+      {live && tier === "unusable" ? (
+        <p className="status-note">
+          {`目前顯示的是 ${formatRelativeAge(data.dataTime, now)}的資料。`}本站每 3–4 小時更新一次，最新數據請見{official}。
+        </p>
+      ) : null}
       <span className="status-badge">
         <span className="status-dot" aria-hidden="true" />
-        {state === "demo" ? "示範資料" : `${state === "late" ? "更新延遲" : "資料最新"}・${formatRelativeAge(data.generatedAt, now)}`}
+        {live ? dataTimeLabel(data.dataTime, now) : "示範資料"}
       </span>
       <span className="status-text">
         {live ? (
-          <>
-            {`快照 ${formatClock(data.generatedAt)} 更新・有效至 ${formatClock(validUntil).slice(-5)}`}
-            <span className="status-detail">
-              <span className="status-sep" aria-hidden="true">・</span>
-              {`${county.county}${county.observedAt ? "有有效測站觀測" : "目前沒有有效即時觀測"}`}
-            </span>
-          </>
+          <span className="status-detail">
+            {`${county.county}${county.observedAt ? "有即時測站觀測" : "使用氣象署逐時預報"}`}
+          </span>
         ) : (
           "數值為示範情境，不代表實際天氣"
         )}
@@ -46,8 +50,10 @@ export function StatusLine({ data, county, now, refreshing, onRefresh }: StatusL
       ) : (
         <a className="refresh" href="?">返回實際資料</a>
       )}
-      {state === "late" ? (
-        <p className="status-warn">排程更新可能延遲；快照超過 2 小時會停止顯示數值，請以中央氣象署為準。</p>
+      {live && tier === "old" ? (
+        <p className="status-explain">
+          {`GitHub 排程延遲，最後成功更新 ${formatClock(data.generatedAt).slice(-5)}。`}本站每 3–4 小時更新一次，最新數據請見{official}。
+        </p>
       ) : null}
       {issues.length ? (
         <ul className="status-issues">

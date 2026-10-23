@@ -4,8 +4,6 @@ import { mergeForecasts, parseForecastPayload } from "./forecast";
 import { asRecord } from "./parse";
 import type { CountyForecast, RawCwaBundle, StationObservation, WeatherSnapshot } from "./types";
 
-export const SNAPSHOT_MAX_AGE_MS = 2 * 60 * 60_000;
-
 export const createWeatherSnapshot = (bundle: RawCwaBundle, issues: string[], now = Date.now()): WeatherSnapshot => ({
   schemaVersion: 1,
   fetchedAt: new Date(now).toISOString(),

@@ -31,8 +31,9 @@ describe("public weather snapshot", () => {
   it("rebuilds today and tomorrow across Taipei midnight", () => {
     const data = buildSnapshotDashboard(sample(), Date.parse("2026-10-07T00:01:00+08:00"));
     expect(data.counties[0].days.map((d) => d.date)).toEqual(["2026-10-07", "2026-10-08"]);
-    expect(data.counties.every((c) => c.days[0].hours.every((h) => h.uv === undefined && h.apparent === undefined))).toBe(true);
-    expect(data.issues).toContain("資料快照已超過 2 小時，暫停顯示數值與時段建議。");
+    // An old snapshot is still shown; nothing claims to be a current observation.
+    expect(data.counties.every((c) => c.days.every((d) => d.hours.every((h) => h.uvOrigin?.kind !== "observation" && h.apparentOrigin?.kind !== "observation")))).toBe(true);
+    expect(data.issues.join("")).not.toMatch(/暫停顯示/);
   });
 
   it("expires observations as the clock advances and uses forecasts with their own source", () => {
@@ -52,10 +53,24 @@ describe("public weather snapshot", () => {
     expect(c.days[0].hours[13].apparentOrigin?.kind).toBe("observation");
   });
 
-  it("does not let a future snapshot claim current readings", () => {
+  it("flags a snapshot stamped ahead of the device clock", () => {
     const data = buildSnapshotDashboard(sample(), fx.NOW - 10 * 60_000);
-    expect(data.counties[0].days[0].uvMax).toBeUndefined();
-    expect(data.stale).toBe(true);
+    expect(data.issues[0]).toMatch(/裝置時間/);
+  });
+
+  it("keeps showing forecasts from a snapshot several hours old", () => {
+    const snapshot = sample();
+    const fresh = buildSnapshotDashboard(snapshot, fx.NOW).counties.find((c) => c.county === "臺北市")!;
+    const later = buildSnapshotDashboard(snapshot, fx.NOW + 3 * 60 * 60_000).counties.find((c) => c.county === "臺北市")!;
+    expect(fresh.days[0].apparentMax).toBeDefined();
+    expect(later.days[0].hours.some((h) => h.apparent !== undefined)).toBe(true);
+    expect(later.days[0].hours.some((h) => h.apparentOrigin?.kind === "observation")).toBe(false);
+  });
+
+  it("dates the data by its newest station reading", () => {
+    const data = buildSnapshotDashboard(sample(), fx.NOW);
+    expect(Date.parse(data.dataTime)).toBeLessThanOrEqual(Date.parse(sample().fetchedAt));
+    expect(data.dataTime).not.toBe(sample().fetchedAt);
   });
 });
 
