@@ -32,7 +32,8 @@ describe("data freshness label", () => {
   it("explains a delayed schedule and points to the official source", () => {
     const html = render(8 * 60);
     expect(html).toContain("is-old");
-    expect(html).toContain("GitHub 排程延遲，最後成功更新 04:00");
+    expect(html).toContain("排程更新延遲，最後成功更新 04:00");
+    expect(html).not.toContain("GitHub");
     expect(html).toContain("本站每 3–4 小時更新一次");
     expect(html).toContain("cwa.gov.tw");
   });

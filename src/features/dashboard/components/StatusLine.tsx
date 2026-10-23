@@ -1,6 +1,8 @@
+import { RefreshCw } from "lucide-react";
 import { dataTimeLabel, freshnessOf } from "../../../lib/freshness";
 import { formatClock, formatRelativeAge } from "../../../lib/time";
 import type { CountyOutlook, DashboardData } from "../../../lib/types";
+import { ICON } from "./icons";
 
 interface StatusLineProps {
   data: DashboardData;
@@ -45,6 +47,7 @@ export function StatusLine({ data, county, now, refreshing, onRefresh }: StatusL
       </span>
       {live ? (
         <button className="refresh" type="button" onClick={onRefresh} disabled={refreshing}>
+          <RefreshCw {...ICON} size={16} />
           {refreshing ? "更新中…" : "重新整理"}
         </button>
       ) : (
@@ -52,7 +55,7 @@ export function StatusLine({ data, county, now, refreshing, onRefresh }: StatusL
       )}
       {live && tier === "old" ? (
         <p className="status-explain">
-          {`GitHub 排程延遲，最後成功更新 ${formatClock(data.generatedAt).slice(-5)}。`}本站每 3–4 小時更新一次，最新數據請見{official}。
+          {`排程更新延遲，最後成功更新 ${formatClock(data.generatedAt).slice(-5)}。`}本站每 3–4 小時更新一次，最新數據請見{official}。
         </p>
       ) : null}
       {issues.length ? (
