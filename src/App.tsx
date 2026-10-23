@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { BrandMark } from "./features/dashboard/components/BrandMark";
+import { Brand } from "./features/dashboard/components/BrandMark";
 import { Footer } from "./features/dashboard/components/Footer";
 import { Dashboard } from "./features/dashboard/Dashboard";
 import { useDashboardData } from "./features/dashboard/useDashboardData";
@@ -11,8 +11,7 @@ function Shell({ children }: { children: ReactNode }) {
       <header className="topbar">
         <div className="wrap">
           <div className="brand">
-            <BrandMark />
-            <span className="brand-name">台灣曬熱指南</span>
+            <Brand />
           </div>
         </div>
       </header>

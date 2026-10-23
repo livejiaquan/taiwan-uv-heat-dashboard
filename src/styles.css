@@ -108,9 +108,12 @@ a { color: var(--accent); text-underline-offset: 3px; }
 /* Header: brand left, place picker right, on the page colour like the reference. */
 .topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
 .topbar .wrap { display: flex; align-items: center; gap: var(--sp-12); min-height: 72px; }
-.brand { display: flex; align-items: center; gap: var(--sp-12); min-width: 0; margin-right: auto; }
-.brand-mark { width: 40px; height: 40px; flex: none; }
-.brand-name { font-weight: 700; font-size: var(--fs-16); white-space: nowrap; }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; margin-right: auto; }
+/* Brand mark (public/brand/mark.svg) and wordmark: 32px mark, 10px gap, 16/600 name, 12/500 subtitle. */
+.brand-mark { width: 32px; height: 32px; flex: none; display: block; }
+.brand-text { display: grid; line-height: 1.25; }
+.brand-sub { font-size: var(--fs-12); font-weight: 500; color: var(--muted); }
+.brand-name { font-weight: 600; font-size: var(--fs-16); letter-spacing: -0.01em; white-space: nowrap; }
 .county-picker { position: relative; display: flex; align-items: center; }
 .county-picker select {
   appearance: none; border: 0; background: var(--surface); color: var(--ink);
@@ -119,7 +122,7 @@ a { color: var(--accent); text-underline-offset: 3px; }
 }
 .county-picker svg { position: absolute; right: var(--sp-16); pointer-events: none; color: var(--muted); }
 .mini { display: none; align-items: center; gap: var(--sp-8); }
-.topbar.is-compact .brand-name { display: none; }
+.topbar.is-compact .brand-text { display: none; }
 .topbar.is-compact .mini { display: inline-flex; }
 .topbar.is-compact { box-shadow: 0 1px 0 var(--line); }
 
@@ -382,3 +385,12 @@ footer a { display: inline-flex; align-items: center; min-height: var(--tap); }
 .tab, .btn-ghost, .segmented button, .row-btn { transition: background-color var(--dur) var(--ease); }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; scroll-behavior: auto !important; } }
+
+/* Lucide icons sit on the text baseline with a small gap. */
+.metric-label { display: inline-flex; align-items: center; gap: var(--sp-4); }
+.metric-label svg { color: var(--muted); flex: none; }
+.btn-ghost, .segmented button, .status-line .refresh { gap: var(--sp-8); }
+.segmented button { display: inline-flex; align-items: center; justify-content: center; }
+.status-line .refresh { gap: var(--sp-4); }
+.county-picker svg { width: 16px; height: 16px; }
+.metric.fact dt.metric-label { display: flex; }
