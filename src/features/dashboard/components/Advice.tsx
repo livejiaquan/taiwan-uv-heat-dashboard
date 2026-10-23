@@ -53,7 +53,7 @@ export function Advice({ county, day, dayWord, audience, onAudience }: AdvicePro
           ))}
         </div>
       </div>
-      <div role="tabpanel" id="advice-panel" tabIndex={0} aria-labelledby={`tab-${audience}`}>
+      <div role="tabpanel" id="advice-panel" className="advice-card" tabIndex={0} aria-labelledby={`tab-${audience}`}>
         <ul className="advice-list">
           {adviceFor(day, audience, dayWord).map(([when, title, body]) => (
             <li key={title}>
