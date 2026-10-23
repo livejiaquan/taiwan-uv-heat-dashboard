@@ -1,4 +1,4 @@
-import { formatClock, formatRelativeAge } from "./time";
+import { formatClock, formatRelativeAge, taipeiDate } from "./time";
 
 /**
  * How old the data is, measured in the browser from the data's own time.
@@ -22,6 +22,7 @@ export const freshnessOf = (dataTime: string, now: number): Freshness => {
 /** 「資料時間 HH:MM · N 小時前」; the date is added once the data is from another day. */
 export const dataTimeLabel = (dataTime: string, now: number): string => {
   const clock = formatClock(dataTime);
-  const shown = now - Date.parse(dataTime) > OLD_MAX_MS ? clock : clock.slice(-5);
+  const timestamp = Date.parse(dataTime);
+  const shown = Number.isFinite(timestamp) && taipeiDate(timestamp) === taipeiDate(now) ? clock.slice(-5) : clock;
   return `資料時間 ${shown} · ${formatRelativeAge(dataTime, now)}`;
 };
