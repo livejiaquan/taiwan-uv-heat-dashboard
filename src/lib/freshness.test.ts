@@ -25,4 +25,10 @@ describe("freshness tiers", () => {
     expect(dataTimeLabel(t0, at(3 * 60 * 60_000))).toBe("資料時間 08:00 · 3 小時前");
     expect(dataTimeLabel(t0, at(30 * 60 * 60_000))).toBe("資料時間 10/23 08:00 · 1 天前");
   });
+
+  it("shows the date after a Taipei midnight even when the data is less than a day old", () => {
+    const lateEvening = "2026-10-23T23:30:00+08:00";
+    const nextMorning = Date.parse("2026-10-24T01:30:00+08:00");
+    expect(dataTimeLabel(lateEvening, nextMorning)).toBe("資料時間 10/23 23:30 · 2 小時前");
+  });
 });
