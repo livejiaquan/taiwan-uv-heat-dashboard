@@ -1,6 +1,6 @@
-/* Layout follows the measured rhythm of a forecast-table page (docs/references/tokens.md):
-   a pale page, borderless white cards with 8px corners, 1280px of content, 16px body text,
-   section titles 16px above their card and cards 32px apart. The verdict stays the one focal point. */
+/* Layout: a pale page, borderless white cards with 8px corners, 1280px of content, 16px body
+   text, section titles 16px above their card and cards 32px apart. The verdict is the one focal
+   point. Design notes: docs/design.md */
 :root {
   /* Three layers of pale blue-grey behind white cards; colour only on data values. */
   --bg: #edf3f9;

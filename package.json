@@ -1,6 +1,14 @@
 {
   "name": "taiwan-uv-heat-dashboard",
   "version": "0.1.0",
+  "description": "Taiwan UV and heat-risk dashboard using Central Weather Administration open data.",
+  "author": "Lim Jia Quan",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/livejiaquan/taiwan-uv-heat-dashboard.git"
+  },
+  "homepage": "https://livejiaquan.github.io/taiwan-uv-heat-dashboard/",
   "private": true,
   "type": "module",
   "scripts": {
