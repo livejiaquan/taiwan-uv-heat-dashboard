@@ -9,9 +9,9 @@ import { Advice } from "./components/Advice";
 import { Footer } from "./components/Footer";
 import { National, type Metric } from "./components/National";
 import { StatusLine } from "./components/StatusLine";
-import { Timeline } from "./components/Timeline";
+import { Timeline, type HourView } from "./components/Timeline";
 import { TopBar } from "./components/TopBar";
-import { Verdict } from "./components/Verdict";
+import { PackSection, Verdict } from "./components/Verdict";
 
 interface DashboardProps {
   data: DashboardData;
@@ -37,6 +37,7 @@ export function Dashboard({ data, now, refreshing, onRefresh }: DashboardProps) 
   const [audience, setAudience] = useState<Audience>("general");
   const [skin, setSkin] = useState(initialSkin);
   const [metric, setMetric] = useState<Metric>("uv");
+  const [hourView, setHourView] = useState<HourView>("table");
   const [centerKey, setCenterKey] = useState(0);
   const [compactHeader, setCompactHeader] = useState(false);
   const verdictRef = useRef<HTMLElement | null>(null);
@@ -107,7 +108,6 @@ export function Dashboard({ data, now, refreshing, onRefresh }: DashboardProps) 
         onSelectCounty={selectCounty}
       />
       <div className="wrap">
-        <StatusLine data={data} county={county} now={now} refreshing={refreshing} onRefresh={onRefresh} />
         <main>
           <Verdict
             sectionRef={verdictRef}
@@ -118,11 +118,10 @@ export function Dashboard({ data, now, refreshing, onRefresh }: DashboardProps) 
             dayWord={dayWord}
             hour={hour}
             isNow={isNow}
-            nowHour={dayIndex === 0 ? nowHour : null}
             staleLabel={staleLabel}
+            status={<StatusLine data={data} county={county} now={now} refreshing={refreshing} onRefresh={onRefresh} />}
             skin={skin}
             demo={data.mode === "demo"}
-            onSkin={changeSkin}
             onDay={changeDay}
           />
           <Timeline
@@ -135,7 +134,10 @@ export function Dashboard({ data, now, refreshing, onRefresh }: DashboardProps) 
             demo={data.mode === "demo"}
             onSelect={selectHour}
             onNow={goNow}
+            view={hourView}
+            onView={setHourView}
           />
+          <PackSection county={county.county} day={day} dayWord={dayWord} hour={hour} skin={skin} demo={data.mode === "demo"} onSkin={changeSkin} />
           <Advice county={county.county} day={day} dayWord={dayWord} audience={audience} onAudience={setAudience} />
           <National
             counties={data.counties}

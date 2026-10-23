@@ -2,6 +2,9 @@ import { useEffectEvent, useLayoutEffect, useRef, useState, type KeyboardEvent, 
 import { heatColor, heatLevel, uvColor, uvInk, uvLevel } from "../../../lib/levels";
 import { pad2 } from "../../../lib/time";
 import type { DayOutlook } from "../../../lib/types";
+import { HourTable } from "./HourTable";
+
+export type HourView = "table" | "chart";
 
 interface TimelineProps {
   day: DayOutlook;
@@ -15,13 +18,15 @@ interface TimelineProps {
   demo: boolean;
   onSelect: (hour: number, center?: boolean) => void;
   onNow: () => void;
+  view: HourView;
+  onView: (view: HourView) => void;
 }
 
 const T0 = 20;
 const T1 = 42;
 const TICKS = [24, 28, 32, 36, 40];
 
-function useElementWidth(ref: RefObject<HTMLElement | null>): number {
+function useElementWidth(ref: RefObject<HTMLElement | null>, mounted: boolean): number {
   const [width, setWidth] = useState(0);
   useLayoutEffect(() => {
     const node = ref.current;
@@ -29,16 +34,16 @@ function useElementWidth(ref: RefObject<HTMLElement | null>): number {
     const observer = new ResizeObserver(([entry]) => setWidth(Math.round(entry.contentRect.width)));
     observer.observe(node);
     return () => observer.disconnect();
-  }, [ref]);
+  }, [ref, mounted]);
   return width;
 }
 
 const coarsePointer = () => typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
 
-export function Timeline({ day, dayWord, hour, nowHour, isNow, centerKey, demo, onSelect, onNow }: TimelineProps) {
+export function Timeline({ day, dayWord, hour, nowHour, isNow, centerKey, demo, onSelect, onNow, view, onView }: TimelineProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
-  const hostWidth = useElementWidth(hostRef);
+  const hostWidth = useElementWidth(hostRef, view === "chart");
   const [touchHint] = useState(coarsePointer);
 
   // On phones the 24 hours scroll sideways at a readable column width with the
@@ -281,53 +286,71 @@ export function Timeline({ day, dayWord, hour, nowHour, isNow, centerKey, demo, 
 
   return (
     <section aria-labelledby="timeline-title">
+      <div className="seg-row">
+        <div className="segmented" role="group" aria-label="顯示方式">
+          <button type="button" aria-pressed={view === "table"} onClick={() => onView("table")}>
+            表格
+          </button>
+          <button type="button" aria-pressed={view === "chart"} onClick={() => onView("chart")}>
+            圖表
+          </button>
+        </div>
+      </div>
       <div className="section-head">
         <div>
-          <h2 id="timeline-title">{dayWord}的節奏</h2>
+          <h2 id="timeline-title">{dayWord}逐時</h2>
           <p>
-            {touchHint
-              ? "左右滑動看整天，點一下選時段，上方結論會跟著更新。"
-              : "點或拖曳時間軸，上方的結論會跟著所選時段更新。"}
+            {view === "table"
+              ? "選一列，上方結論會跟著所選時段更新。"
+              : touchHint
+                ? "左右滑動看整天，點一下選時段。"
+                : "點或拖曳時間軸選時段。"}
           </p>
         </div>
         <button className="btn-ghost" type="button" onClick={onNow} disabled={isNow}>
           {nowHour === null ? "回到今天" : "回到現在"}
         </button>
       </div>
-      <div className="timeline">
-        <div ref={hostRef} className={scroll ? "chart-scroll" : "chart-fit"}>
-          {scroll ? (
-            <svg className="chart-axis" viewBox={`0 0 30 ${H}`} width={30} height={H} aria-hidden="true">
-              {axis}
-            </svg>
-          ) : null}
-          <div ref={scrollerRef} className="chart-scroller">
-            {chart}
+      {view === "table" ? (
+        <div className="timeline is-table">
+          <HourTable day={day} hour={hour} nowHour={nowHour} onSelect={(h) => onSelect(h)} />
+        </div>
+      ) : (
+        <div className="timeline">
+          <div ref={hostRef} className={scroll ? "chart-scroll" : "chart-fit"}>
+            {scroll ? (
+              <svg className="chart-axis" viewBox={`0 0 30 ${H}`} width={30} height={H} aria-hidden="true">
+                {axis}
+              </svg>
+            ) : null}
+            <div ref={scrollerRef} className="chart-scroller">
+              {chart}
+            </div>
+          </div>
+          <div className="chart-legend">
+            <span>
+              <i />
+              體感溫度
+            </span>
+            <span>
+              <i className="band" style={{ background: "var(--ht-2)" }} />
+              警戒 32° 以上
+            </span>
+            <span>
+              <i className="band" style={{ background: "var(--ht-3)" }} />
+              危險 36° 以上
+            </span>
+            <span className={demo ? "uv-note" : undefined}>
+              <i className="band" style={{ background: "var(--uv-2)" }} />
+              {demo ? "方格為逐時紫外線" : "紫外線：有效測站觀測優先，其餘依每日最大值推估；缺值留白"}
+            </span>
+            <span>
+              <i className="band" style={{ background: "var(--rain)" }} />
+              降雨機率 30% 以上
+            </span>
           </div>
         </div>
-        <div className="chart-legend">
-          <span>
-            <i />
-            體感溫度
-          </span>
-          <span>
-            <i className="band" style={{ background: "var(--ht-2)" }} />
-            警戒 32° 以上
-          </span>
-          <span>
-            <i className="band" style={{ background: "var(--ht-3)" }} />
-            危險 36° 以上
-          </span>
-          <span className={demo ? "uv-note" : undefined}>
-            <i className="band" style={{ background: "var(--uv-2)" }} />
-            {demo ? "方格為逐時紫外線" : "紫外線：有效測站觀測優先，其餘依每日最大值推估；缺值留白"}
-          </span>
-          <span>
-            <i className="band" style={{ background: "var(--rain)" }} />
-            降雨機率 30% 以上
-          </span>
-        </div>
-      </div>
+      )}
     </section>
   );
 }
