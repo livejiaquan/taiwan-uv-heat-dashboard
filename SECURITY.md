@@ -6,4 +6,4 @@ Default collection uses official public CWA files and needs no private credentia
 
 If a key was included in any historical frontend bundle, revoke it at the provider and issue a replacement; removing it from the current source does not revoke copies already downloaded. Do not paste key values into issues or pull requests.
 
-Monitor scheduled deployment failures in the Actions tab. Measurements expire after 45 minutes and snapshots after two hours, including when collection fails or scheduled workflows stop. This application does not provide official alerts or guarantee safe outdoor activity.
+Monitor scheduled deployment failures in the Actions tab. Measurements expire after 45 minutes. When collection fails or scheduled workflows stop, the last snapshot stays visible and is labelled with its data time and age. This application does not provide official alerts or guarantee safe outdoor activity.

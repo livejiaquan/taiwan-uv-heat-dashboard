@@ -1,6 +1,6 @@
 import { counties } from "../data/counties";
 import { blockAt, emptyForecast, valueAt } from "./forecast";
-import { createWeatherSnapshot, SNAPSHOT_MAX_AGE_MS } from "./snapshot";
+import { createWeatherSnapshot } from "./snapshot";
 import { apparentTemperature, uvDayShape } from "./levels";
 import { HOUR_MS, addDays, hourStart, taipeiDate, taipeiHour } from "./time";
 import type { CountyForecast, CountyOutlook, DashboardData, DayOutlook, HourPoint, MetricOrigin, RawCwaBundle, StationObservation, WeatherSnapshot } from "./types";
@@ -131,13 +131,13 @@ export const buildLiveDashboard = (bundle: RawCwaBundle, issues: string[], now =
   buildSnapshotDashboard(createWeatherSnapshot(bundle, issues, now), now);
 
 export const buildSnapshotDashboard = (snapshot: WeatherSnapshot, now = Date.now()): DashboardData => {
-  const age = now - Date.parse(snapshot.fetchedAt);
-  const expired = age > SNAPSHOT_MAX_AGE_MS || age < -CLOCK_SKEW_MS;
-  const observations = expired ? [] : snapshot.observations;
-  const dailyUv = expired ? [] : snapshot.dailyUv;
-  const forecasts = new Map((expired ? [] : snapshot.forecasts).map((f) => [f.county, f]));
-  const expiryIssue = age < -CLOCK_SKEW_MS ? "資料快照時間異常，暫停顯示數值與時段建議。" : "資料快照已超過 2 小時，暫停顯示數值與時段建議。";
-  const issues = expired ? [expiryIssue, ...snapshot.issues] : snapshot.issues;
+  // Old snapshots are still shown: forecasts stay tied to their own hours and
+  // observations older than OBSERVATION_MAX_AGE_MS are never used as "now".
+  // The UI labels the data's age instead (see lib/freshness.ts).
+  const ahead = Date.parse(snapshot.fetchedAt) - now > CLOCK_SKEW_MS;
+  const { observations, dailyUv } = snapshot;
+  const forecasts = new Map(snapshot.forecasts.map((f) => [f.county, f]));
+  const issues = ahead ? ["資料時間比這台裝置的時鐘還晚，請確認裝置時間是否正確。", ...snapshot.issues] : snapshot.issues;
   const today = taipeiDate(now);
   const tomorrow = addDays(today, 1);
 
@@ -169,10 +169,19 @@ export const buildSnapshotDashboard = (snapshot: WeatherSnapshot, now = Date.now
     !latestObservation || (now - Date.parse(latestObservation)) / 60000 > STALE_AFTER_MINUTES;
   const missing = outlooks.filter((c) => c.days[0].uvMax === undefined && c.days[0].apparentMax === undefined).length;
 
+  // The data's own time: the newest station reading the snapshot carries, else when it was fetched.
+  const dataTime =
+    observations
+      .map((s) => validTime(s.observedAt, Date.parse(snapshot.fetchedAt)))
+      .filter((t): t is number => t !== undefined)
+      .sort((a, b) => b - a)
+      .map((t) => new Date(t).toISOString())[0] ?? snapshot.fetchedAt;
+
   return {
     mode: "live",
     counties: outlooks,
     generatedAt: snapshot.fetchedAt,
+    dataTime,
     latestObservation,
     stale,
     issues: missing ? [...issues, `${missing} 個縣市目前缺少紫外線與體感溫度資料`] : issues,
